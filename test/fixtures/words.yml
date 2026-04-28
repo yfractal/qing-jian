@@ -1,0 +1,15 @@
+cat:
+  chinese_meaning: 猫
+  english_meaning: cat
+
+dog:
+  chinese_meaning: 狗
+  english_meaning: dog
+
+fish:
+  chinese_meaning: 鱼
+  english_meaning: fish
+
+bird:
+  chinese_meaning: 鸟
+  english_meaning: bird
