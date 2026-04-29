@@ -10,9 +10,36 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_28_143926) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_29_004838) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "similar_words", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "similar_wordable_id", null: false
+    t.string "similar_wordable_type", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "word_id", null: false
+    t.index ["similar_wordable_type", "similar_wordable_id"], name: "index_similar_words_on_similar_wordable"
+    t.index ["word_id"], name: "index_similar_words_on_word_id"
+  end
+
+  create_table "word_question_records", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "is_correct", default: false, null: false
+    t.bigint "picked_word_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "word_question_id", null: false
+    t.index ["picked_word_id"], name: "index_word_question_records_on_picked_word_id"
+    t.index ["word_question_id"], name: "index_word_question_records_on_word_question_id"
+  end
+
+  create_table "word_questions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "word_id", null: false
+    t.index ["word_id"], name: "index_word_questions_on_word_id"
+  end
 
   create_table "words", force: :cascade do |t|
     t.string "chinese_meaning"
@@ -20,4 +47,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_28_143926) do
     t.string "english_meaning"
     t.datetime "updated_at", null: false
   end
+
+  add_foreign_key "similar_words", "words"
+  add_foreign_key "word_question_records", "word_questions"
+  add_foreign_key "word_question_records", "words", column: "picked_word_id"
+  add_foreign_key "word_questions", "words"
 end
