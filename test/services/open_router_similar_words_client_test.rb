@@ -43,6 +43,40 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
     assert_equal "小猫", results[0].chinese_meaning
   end
 
+  test "similar_words_for_words sends one request for multiple words and returns results by word" do
+    inner = [
+      { "word" => "cat", "similar_words" => @valid_inner },
+      {
+        "word" => "dog",
+        "similar_words" => [
+          { "word" => "puppy", "english_meaning" => "A young dog.", "chinese_meaning" => "小狗" },
+          { "word" => "hound", "english_meaning" => "A hunting dog.", "chinese_meaning" => "猎犬" },
+          { "word" => "canine", "english_meaning" => "A dog or doglike animal.", "chinese_meaning" => "犬科动物" }
+        ]
+      }
+    ]
+    outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
+    captured_payloads = []
+    response = OpenStruct.new(code: "200", body: JSON.generate(outer))
+    client = Llm::OpenRouterSimilarWordsClient.new(
+      api_key: @api_key,
+      requester: ->(body) {
+        captured_payloads << JSON.parse(body)
+        response
+      }
+    )
+
+    results_by_word = client.similar_words_for_words([ "cat", "dog" ])
+
+    assert_equal 1, captured_payloads.size
+    assert_match(/"cat"/, captured_payloads.first.dig("messages", 0, "content"))
+    assert_match(/"dog"/, captured_payloads.first.dig("messages", 0, "content"))
+    assert_equal [ "cat", "dog" ], results_by_word.keys
+    assert_equal 3, results_by_word["cat"].size
+    assert_equal "kitten", results_by_word["cat"].first.word
+    assert_equal "puppy", results_by_word["dog"].first.word
+  end
+
   test "similar_words raises on non success status" do
     response = OpenStruct.new(code: "401", body: '{"error":"unauthorized"}')
     client = Llm::OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })

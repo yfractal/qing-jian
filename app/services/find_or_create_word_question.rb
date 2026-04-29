@@ -2,6 +2,16 @@
 
 # Finds an existing WordQuestion for a word, or creates one via LLM-suggested similar words.
 class FindOrCreateWordQuestion
+  # Builds or reuses a Word row from one LLM similar-word triple (used by batch creation too).
+  def self.find_or_create_word_for_similar_result(result)
+    Word.find_by("lower(word) = ?", result.word.downcase) ||
+      Word.create!(
+        word: result.word,
+        english_meaning: result.english_meaning,
+        chinese_meaning: result.chinese_meaning
+      )
+  end
+
   def initialize(llm_client: Llm::OpenRouterSimilarWordsClient.new)
     @llm_client = llm_client
   end
@@ -24,11 +34,6 @@ class FindOrCreateWordQuestion
   private
 
   def find_or_create_word(result)
-    Word.find_by("lower(word) = ?", result.word.downcase) ||
-      Word.create!(
-        word: result.word,
-        english_meaning: result.english_meaning,
-        chinese_meaning: result.chinese_meaning
-      )
+    self.class.find_or_create_word_for_similar_result(result)
   end
 end
