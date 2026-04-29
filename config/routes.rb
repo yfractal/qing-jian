@@ -15,6 +15,8 @@ Rails.application.routes.draw do
   resources :words do
     collection do
       post :lookup
+      post :batch_lookup
+      post :batch_create
     end
   end
 end

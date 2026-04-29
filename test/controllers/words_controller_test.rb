@@ -10,6 +10,19 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
         chinese_meaning: "释义"
       )
     end
+
+    def batch_lookup(words)
+      words.filter_map do |word|
+        trimmed = word.to_s.strip
+        next if trimmed.empty?
+
+        OpenRouterWordMeaningClient::BatchMeaningResult.new(
+          word: trimmed,
+          english_meaning: "Definition for #{trimmed}",
+          chinese_meaning: "释义"
+        )
+      end
+    end
   end
 
   class RaisingMeaningClient
@@ -73,6 +86,46 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to word_url(Word.last)
     follow_redirect!
     assert_response :success
+  end
+
+  test "batch_lookup returns json meanings" do
+    post batch_lookup_words_url, params: { words: ["cat", "dog"] }, as: :json
+    assert_response :success
+
+    body = JSON.parse(@response.body)
+    assert_equal 2, body.fetch("meanings").size
+    assert_equal "cat", body.fetch("meanings")[0].fetch("word")
+  end
+
+  test "batch_lookup validates words param" do
+    post batch_lookup_words_url, params: {}, as: :json
+    assert_response :unprocessable_entity
+    assert_equal "words parameter is required", JSON.parse(@response.body).fetch("error")
+  end
+
+  test "batch_create creates multiple words and reports failures" do
+    Word.create!(word: "existing_word", english_meaning: "existing", chinese_meaning: "已有")
+    payload = [
+      { word: "batch_word_1", english_meaning: "m1", chinese_meaning: "中1" },
+      { word: "existing_word", english_meaning: "m2", chinese_meaning: "中2" },
+      { word: "batch_word_2", english_meaning: "m3", chinese_meaning: "中3" }
+    ]
+
+    assert_difference("Word.count", 2) do
+      post batch_create_words_url, params: { words: payload }, as: :json
+    end
+
+    assert_response :created
+    body = JSON.parse(@response.body)
+    assert_equal 2, body.fetch("created").size
+    assert_equal 1, body.fetch("failed").size
+    assert_equal "existing_word", body.fetch("failed")[0].fetch("word")
+  end
+
+  test "batch_create validates empty words array" do
+    post batch_create_words_url, params: { words: [] }, as: :json
+    assert_response :unprocessable_entity
+    assert_equal "words array cannot be empty", JSON.parse(@response.body).fetch("error")
   end
 
   test "should not create word with invalid params" do

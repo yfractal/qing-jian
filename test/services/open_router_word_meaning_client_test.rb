@@ -91,4 +91,70 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
   ensure
     ENV["OPENROUTER_MODEL"] = old_model if old_model
   end
+
+  test "batch_lookup raises when words array is empty" do
+    client = OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(*) { raise "should not call" })
+    error = assert_raises(OpenRouterWordMeaningClient::Error) { client.batch_lookup([]) }
+    assert_equal "words array is empty", error.message
+  end
+
+  test "batch_lookup returns BatchMeaningResult list on success" do
+    inner = [
+      { "word" => "cat", "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫" },
+      { "word" => "dog", "english_meaning" => "A domesticated carnivorous mammal.", "chinese_meaning" => "狗" }
+    ]
+    outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
+    response = OpenStruct.new(code: "200", body: JSON.generate(outer))
+    client = OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
+
+    results = client.batch_lookup(%w[cat dog])
+    assert_equal 2, results.size
+    assert_instance_of OpenRouterWordMeaningClient::BatchMeaningResult, results.first
+    assert_equal "cat", results[0].word
+    assert_equal "狗", results[1].chinese_meaning
+  end
+
+  test "batch_lookup strips blanks and deduplicates words before request" do
+    captured = nil
+    inner = [
+      { "word" => "cat", "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫" }
+    ]
+    outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
+    response = OpenStruct.new(code: "200", body: JSON.generate(outer))
+    client = OpenRouterWordMeaningClient.new(
+      api_key: @api_key,
+      requester: lambda { |body|
+        captured = JSON.parse(body)
+        response
+      }
+    )
+
+    results = client.batch_lookup(["  cat  ", "cat", nil, " "])
+    assert_equal 1, results.size
+    assert_match(/"cat"/, captured.dig("messages", 0, "content"))
+  end
+
+  test "batch_lookup raises on non success status" do
+    response = OpenStruct.new(code: "500", body: '{"error":"server"}')
+    client = OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
+    error = assert_raises(OpenRouterWordMeaningClient::Error) { client.batch_lookup(["cat"]) }
+    assert_match(/OpenRouter request failed \(500\)/, error.message)
+  end
+
+  test "batch_lookup raises when response content is not json array" do
+    outer = { "choices" => [ { "message" => { "content" => '{"word":"cat"}' } } ] }
+    response = OpenStruct.new(code: "200", body: JSON.generate(outer))
+    client = OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
+    error = assert_raises(OpenRouterWordMeaningClient::Error) { client.batch_lookup(["cat"]) }
+    assert_match(/response is not an array/, error.message)
+  end
+
+  test "batch_lookup raises when item missing fields" do
+    inner = [{ "word" => "cat", "english_meaning" => "x" }]
+    outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
+    response = OpenStruct.new(code: "200", body: JSON.generate(outer))
+    client = OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
+    error = assert_raises(OpenRouterWordMeaningClient::Error) { client.batch_lookup(["cat"]) }
+    assert_match(/missing required fields/, error.message)
+  end
 end

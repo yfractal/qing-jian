@@ -9,6 +9,7 @@ class OpenRouterWordMeaningClient
   class Error < StandardError; end
 
   MeaningResult = Data.define(:english_meaning, :chinese_meaning)
+  BatchMeaningResult = Data.define(:word, :english_meaning, :chinese_meaning)
 
   OPENROUTER_URI = URI("https://openrouter.ai/api/v1/chat/completions")
   DEFAULT_MODEL = "deepseek/deepseek-v4-pro"
@@ -40,6 +41,26 @@ class OpenRouterWordMeaningClient
     parse_meaning_from_response(response.body)
   end
 
+  # @param words [Array<String>] English lemmas to look up
+  # @return [Array<BatchMeaningResult>]
+  def batch_lookup(words)
+    raise Error, "OPENROUTER_API_KEY is not set" if @api_key.to_s.strip.empty?
+
+    trimmed_words = words.to_a.map { |word| word.to_s.strip }.reject(&:empty?).uniq
+    raise Error, "words array is empty" if trimmed_words.empty?
+
+    payload = build_batch_payload(trimmed_words)
+    body_json = JSON.generate(payload)
+    response = perform_request(body_json)
+
+    unless response.code.to_i.between?(200, 299)
+      snippet = response.body.to_s.byteslice(0, 500)
+      raise Error, "OpenRouter request failed (#{response.code}): #{snippet}"
+    end
+
+    parse_batch_meanings_from_response(response.body)
+  end
+
   private
 
   def build_payload(word)
@@ -53,6 +74,26 @@ class OpenRouterWordMeaningClient
             "english_meaning" — a concise English definition or gloss suitable for a learner;
             "chinese_meaning" — a concise Chinese translation or gloss for the same sense.
             Example shape: {"english_meaning":"...","chinese_meaning":"..."}
+          PROMPT
+        }
+      ]
+    }
+  end
+
+  def build_batch_payload(words)
+    escaped_words = words.map { |word| "\"#{word.gsub(/\"/, "'")}\"" }.join(", ")
+    {
+      model: @model,
+      messages: [
+        {
+          role: "user",
+          content: <<~PROMPT.squish
+            For the following list of English words: [#{escaped_words}], reply with ONLY a JSON array (no markdown, no code fences).
+            Each array element must be an object with exactly three string keys:
+            "word" — the input word;
+            "english_meaning" — a concise English definition or gloss suitable for a learner;
+            "chinese_meaning" — a concise Chinese translation or gloss for the same sense.
+            Example shape: [{"word":"cat","english_meaning":"...","chinese_meaning":"..."}]
           PROMPT
         }
       ]
@@ -88,6 +129,32 @@ class OpenRouterWordMeaningClient
     raise Error, "OpenRouter JSON missing english_meaning or chinese_meaning" if en.to_s.strip.empty? || zh.to_s.strip.empty?
 
     MeaningResult.new(english_meaning: en.to_s.strip, chinese_meaning: zh.to_s.strip)
+  rescue JSON::ParserError => e
+    raise Error, "Invalid JSON from OpenRouter: #{e.message}"
+  end
+
+  def parse_batch_meanings_from_response(response_body)
+    outer = JSON.parse(response_body)
+    content = outer.dig("choices", 0, "message", "content")
+    raise Error, "OpenRouter response missing message content" if content.to_s.strip.empty?
+
+    entries = JSON.parse(content.strip)
+    raise Error, "OpenRouter response is not an array" unless entries.is_a?(Array)
+
+    entries.map do |entry|
+      word = entry["word"]
+      english_meaning = entry["english_meaning"]
+      chinese_meaning = entry["chinese_meaning"]
+      if word.to_s.strip.empty? || english_meaning.to_s.strip.empty? || chinese_meaning.to_s.strip.empty?
+        raise Error, "OpenRouter JSON missing required fields (word, english_meaning, chinese_meaning)"
+      end
+
+      BatchMeaningResult.new(
+        word: word.to_s.strip,
+        english_meaning: english_meaning.to_s.strip,
+        chinese_meaning: chinese_meaning.to_s.strip
+      )
+    end
   rescue JSON::ParserError => e
     raise Error, "Invalid JSON from OpenRouter: #{e.message}"
   end
