@@ -1,0 +1,44 @@
+---
+description: Prefer direct module/class methods over mixins; comment cross-class calls
+globs: "**/*.rb"
+alwaysApply: false
+---
+
+# Explicit dependencies; avoid mixins when practical
+
+## Prefer direct calls over `include` / `extend`
+
+When you only need a few helpers from another module, **expose them as module methods or class methods** (e.g. `SomeModule.do_thing(...)`) and **call them from the caller** instead of mixing the module into your class with `include`.
+
+- Makes dependencies obvious at the call site (better for humans and AI).
+- Reserve `include` for APIs that truly need instance-level integration (e.g. framework hooks).
+
+```ruby
+# ❌ Avoid when a single function-style helper is enough
+class MyClient
+  include HttpHelpers
+  def fetch
+    send_request(...)
+  end
+end
+
+# ✅ Prefer explicit module API
+class MyClient
+  def fetch
+    HttpHelpers.send_request(...)
+  end
+end
+```
+
+Use normal **subclassing** only when an “is-a” relationship and shared instance behavior justify it; do not add abstract base classes just to share a method.
+
+## Comment dependencies on other classes/modules
+
+When calling **another class or module’s method** (especially from a different namespace), add a **short comment** naming **which type** you depend on and **which method** (and briefly why if non-obvious).
+
+```ruby
+# Delegates HTTP and request logging to Llm::RequestSender.send_request.
+response = Llm::RequestSender.send_request(openrouter_uri: uri, ...)
+```
+
+Keep comments one line when possible; skip only when the call is already fully self-describing *and* in the same small file with no indirection.
