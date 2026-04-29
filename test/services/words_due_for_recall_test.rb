@@ -42,6 +42,27 @@ class WordsDueForRecallTest < ActiveSupport::TestCase
     assert_not_includes due_words, @word
   end
 
+  test "excludes words by ids" do
+    other_due_word = create_word!("horse", created_on: @created_on)
+
+    due_words = WordsDueForRecall.call(
+      day: @created_on,
+      excluding_word_ids: [ @word.id.to_s ]
+    )
+
+    assert_not_includes due_words, @word
+    assert_includes due_words, other_due_word
+  end
+
+  test "ignores blank and invalid excluded ids" do
+    due_words = WordsDueForRecall.call(
+      day: @created_on,
+      excluding_word_ids: [ "", "abc", nil, @word.id.to_s ]
+    )
+
+    assert_not_includes due_words, @word
+  end
+
   test "correct recall increments remember times and sets next due day" do
     create_record!(created_on: @created_on, correct: true)
 

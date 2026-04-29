@@ -9,8 +9,12 @@ class WordsDueForRecall
   ].freeze
 
   class << self
-    def call(day: Date.current)
-      Word.joins(:word_recall_state).where(word_recall_states: { due_day: ..day.to_date })
+    def call(day: Date.current, excluding_word_ids: [])
+      due_words = Word.joins(:word_recall_state).where(word_recall_states: { due_day: ..day.to_date })
+      excluded_ids = normalize_word_ids(excluding_word_ids)
+      return due_words if excluded_ids.empty?
+
+      due_words.where.not(id: excluded_ids)
     end
 
     def due?(word:, last_correct_record:, remember_times:, day:)
@@ -41,6 +45,13 @@ class WordsDueForRecall
     end
 
     private
+
+    def normalize_word_ids(word_ids)
+      Array(word_ids).filter_map do |word_id|
+        parsed_id = Integer(word_id, exception: false)
+        parsed_id if parsed_id&.positive?
+      end.uniq
+    end
 
     def next_due_day(word:, last_correct_record:, remember_times:)
       rule = RECALL_RULES.find { |recall_rule| recall_rule[:remember_times] == remember_times }
