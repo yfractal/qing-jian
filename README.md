@@ -16,3 +16,12 @@ The OpenRouter clients (`OpenRouterWordMeaningClient` and `OpenRouterSimilarWord
 - Adding Word
 - Remember Words
 - Statistic
+
+## test
+
+1. Install gems:
+   - `bundle install`
+2. Run all tests:
+   - `bin/rails test`
+3. Run a single test file:
+   - `bin/rails test test/services/words_due_for_recall_test.rb`
