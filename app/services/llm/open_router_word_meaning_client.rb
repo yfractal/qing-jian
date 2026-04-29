@@ -6,8 +6,6 @@ require "uri"
 module Llm
   # Calls OpenRouter chat completions API to suggest English and Chinese meanings for a vocabulary word.
   class OpenRouterWordMeaningClient
-    include RequestSender
-
     class Error < StandardError; end
 
     MeaningResult = Data.define(:english_meaning, :chinese_meaning)
@@ -33,7 +31,14 @@ module Llm
 
       payload = build_payload(trimmed)
       body_json = JSON.generate(payload)
-      response = send_request(body_json: body_json, model: @model, prompt: payload.dig(:messages, 0, :content))
+      response = RequestSender.send_request(
+        openrouter_uri: OPENROUTER_URI,
+        api_key: @api_key,
+        requester: @requester,
+        body_json: body_json,
+        model: @model,
+        prompt: payload.dig(:messages, 0, :content)
+      )
 
       unless response.code.to_i.between?(200, 299)
         snippet = response.body.to_s.byteslice(0, 500)
@@ -53,7 +58,14 @@ module Llm
 
       payload = build_batch_payload(trimmed_words)
       body_json = JSON.generate(payload)
-      response = send_request(body_json: body_json, model: @model, prompt: payload.dig(:messages, 0, :content))
+      response = RequestSender.send_request(
+        openrouter_uri: OPENROUTER_URI,
+        api_key: @api_key,
+        requester: @requester,
+        body_json: body_json,
+        model: @model,
+        prompt: payload.dig(:messages, 0, :content)
+      )
 
       unless response.code.to_i.between?(200, 299)
         snippet = response.body.to_s.byteslice(0, 500)
