@@ -5,7 +5,7 @@ require "test_helper"
 class WordsControllerTest < ActionDispatch::IntegrationTest
   class FakeMeaningClient
     def lookup(word)
-      OpenRouterWordMeaningClient::MeaningResult.new(
+      Llm::OpenRouterWordMeaningClient::MeaningResult.new(
         english_meaning: "Definition for #{word}",
         chinese_meaning: "释义"
       )
@@ -16,7 +16,7 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
         trimmed = word.to_s.strip
         next if trimmed.empty?
 
-        OpenRouterWordMeaningClient::BatchMeaningResult.new(
+        Llm::OpenRouterWordMeaningClient::BatchMeaningResult.new(
           word: trimmed,
           english_meaning: "Definition for #{trimmed}",
           chinese_meaning: "释义"
@@ -27,7 +27,7 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
 
   class RaisingMeaningClient
     def lookup(_word)
-      raise OpenRouterWordMeaningClient::Error, "API down"
+      raise Llm::OpenRouterWordMeaningClient::Error, "API down"
     end
   end
 
