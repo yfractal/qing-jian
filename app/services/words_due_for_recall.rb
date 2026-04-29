@@ -1,60 +1,53 @@
 class WordsDueForRecall
-  SCHEDULE_INTERVALS = [ 0, 2, 3, 5, 7, 15 ].freeze
+  RECALL_RULES = [
+    { remember_times: 0, interval_days: 0 },
+    { remember_times: 1, interval_days: 2 },
+    { remember_times: 2, interval_days: 3 },
+    { remember_times: 3, interval_days: 5 },
+    { remember_times: 4, interval_days: 7 },
+    { remember_times: 5, interval_days: 15 }
+  ].freeze
 
   class << self
     def call(day: Date.current)
-      day = day.to_date
-      due_sql, due_binds = due_conditions(day: day)
-
-      Word
-        .joins("LEFT JOIN (#{correct_stats_subquery(day: day).to_sql}) recall_stats ON recall_stats.word_id = words.id")
-        .where("words.created_at <= ?", day.end_of_day)
-        .where(due_sql, *due_binds)
+      Word.joins(:word_recall_state).where(word_recall_states: { due_day: ..day.to_date })
     end
 
     def due?(word:, last_correct_record:, remember_times:, day:)
-      return false if remember_times >= SCHEDULE_INTERVALS.size
+      due_day = next_due_day(
+        word: word,
+        last_correct_record: last_correct_record,
+        remember_times: remember_times
+      )
 
-      base_date =
-        if last_correct_record
-          last_correct_record.created_at.to_date
-        else
-          word.created_at.to_date
-        end
+      due_day.present? && day.to_date >= due_day
+    end
 
-      due_date = base_date + SCHEDULE_INTERVALS[remember_times].days
-      day >= due_date
+    def update_state_for(record)
+      return unless record.correct?
+
+      word = record.word_question.word
+      state = WordRecallState.find_or_initialize_by(word: word)
+      state.remember_times ||= 0
+      state.due_day ||= word.created_at.to_date
+
+      state.remember_times += 1
+      state.due_day = next_due_day(
+        word: word,
+        last_correct_record: record,
+        remember_times: state.remember_times
+      )
+      state.save!
     end
 
     private
 
-    def correct_stats_subquery(day:)
-      WordQuestionRecord
-        .joins(:word_question)
-        .where(is_correct: true)
-        .where("word_question_records.picked_word_id = word_questions.word_id")
-        .where("word_question_records.created_at <= ?", day.end_of_day)
-        .group("word_questions.word_id")
-        .select(
-          "word_questions.word_id AS word_id",
-          "COUNT(word_question_records.id) AS remember_times",
-          "MAX(word_question_records.created_at) AS last_correct_at"
-        )
-    end
+    def next_due_day(word:, last_correct_record:, remember_times:)
+      rule = RECALL_RULES.find { |recall_rule| recall_rule[:remember_times] == remember_times }
+      return unless rule
 
-    def due_conditions(day:)
-      clauses = [ "COALESCE(recall_stats.remember_times, 0) = 0" ]
-      binds = []
-
-      SCHEDULE_INTERVALS.each_with_index do |interval_days, remember_times|
-        next if remember_times.zero?
-
-        clauses << "(recall_stats.remember_times = ? AND recall_stats.last_correct_at <= ?)"
-        binds << remember_times
-        binds << (day - interval_days.days).end_of_day
-      end
-
-      [ clauses.join(" OR "), binds ]
+      base_date = last_correct_record&.created_at&.to_date || word.created_at.to_date
+      base_date + rule[:interval_days].days
     end
   end
 end

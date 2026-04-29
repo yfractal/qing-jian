@@ -40,4 +40,44 @@ class WordQuestionRecordTest < ActiveSupport::TestCase
     record = WordQuestionRecord.new(is_correct: false)
     assert_not record.correct?
   end
+
+  test "creating a correct record updates the target word recall state" do
+    state = @question.word.word_recall_state || @question.word.create_word_recall_state!(
+      remember_times: 0,
+      due_day: @question.word.created_at.to_date
+    )
+    state.update!(remember_times: 0, due_day: Date.new(2026, 4, 1))
+
+    WordQuestionRecord.create!(
+      word_question: @question,
+      picked_word: @question.word,
+      is_correct: true,
+      created_at: Time.zone.local(2026, 4, 1, 10),
+      updated_at: Time.zone.local(2026, 4, 1, 10)
+    )
+
+    state.reload
+    assert_equal 1, state.remember_times
+    assert_equal Date.new(2026, 4, 3), state.due_day
+  end
+
+  test "creating an incorrect record does not update the target word recall state" do
+    state = @question.word.word_recall_state || @question.word.create_word_recall_state!(
+      remember_times: 0,
+      due_day: @question.word.created_at.to_date
+    )
+    state.update!(remember_times: 0, due_day: Date.new(2026, 4, 1))
+
+    WordQuestionRecord.create!(
+      word_question: @question,
+      picked_word: words(:dog),
+      is_correct: false,
+      created_at: Time.zone.local(2026, 4, 1, 10),
+      updated_at: Time.zone.local(2026, 4, 1, 10)
+    )
+
+    state.reload
+    assert_equal 0, state.remember_times
+    assert_equal Date.new(2026, 4, 1), state.due_day
+  end
 end

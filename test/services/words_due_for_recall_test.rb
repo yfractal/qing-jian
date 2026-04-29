@@ -3,59 +3,71 @@ require "test_helper"
 class WordsDueForRecallTest < ActiveSupport::TestCase
   def setup
     @created_on = Date.new(2026, 4, 1)
-    @word = create_word!("cat")
+    @word = create_word!("cat", created_on: @created_on)
     @distractor_words = [
-      create_word!("dog"),
-      create_word!("fish"),
-      create_word!("bird")
+      create_word!("dog", created_on: @created_on),
+      create_word!("fish", created_on: @created_on),
+      create_word!("bird", created_on: @created_on)
     ]
     @question = create_word_question_for!(@word, @distractor_words)
-
-    set_word_created_on(@word, @created_on)
   end
 
-  test "newly created word is due on its created date" do
+  test "returns words with due day on the requested day" do
     due_words = WordsDueForRecall.call(day: @created_on)
 
     assert_includes due_words, @word
   end
 
-  test "new word is not due before its created date" do
-    due_words = WordsDueForRecall.call(day: @created_on - 1.day)
+  test "returns overdue words" do
+    @word.word_recall_state.update!(due_day: @created_on - 1.day)
 
-    assert_not_includes due_words, @word
-  end
-
-  test "word with one correct recall is due after two calendar days" do
-    create_record!(created_on: @created_on, correct: true)
-
-    due_words = WordsDueForRecall.call(day: @created_on + 2.days)
+    due_words = WordsDueForRecall.call(day: @created_on)
 
     assert_includes due_words, @word
   end
 
-  test "word with one correct recall is not due before two calendar days" do
-    create_record!(created_on: @created_on, correct: true)
+  test "does not return words due after the requested day" do
+    @word.word_recall_state.update!(due_day: @created_on + 1.day)
 
-    due_words = WordsDueForRecall.call(day: @created_on + 1.day)
+    due_words = WordsDueForRecall.call(day: @created_on)
 
     assert_not_includes due_words, @word
   end
 
-  test "incorrect recalls do not advance or postpone the schedule" do
+  test "does not return completed words with nil due day" do
+    @word.word_recall_state.update!(due_day: nil)
+
+    due_words = WordsDueForRecall.call(day: @created_on + 100.days)
+
+    assert_not_includes due_words, @word
+  end
+
+  test "correct recall increments remember times and sets next due day" do
+    create_record!(created_on: @created_on, correct: true)
+
+    @word.word_recall_state.reload
+
+    assert_equal 1, @word.word_recall_state.remember_times
+    assert_equal @created_on + 2.days, @word.word_recall_state.due_day
+  end
+
+  test "incorrect recall does not change recall state" do
+    original_state = @word.word_recall_state.attributes.slice("remember_times", "due_day")
+
+    create_record!(created_on: @created_on, correct: false)
+
+    @word.word_recall_state.reload
+
+    assert_equal original_state, @word.word_recall_state.attributes.slice("remember_times", "due_day")
+  end
+
+  test "overdue word keeps appearing until a later correct recall updates due day" do
     create_record!(created_on: @created_on, correct: true)
     create_record!(created_on: @created_on + 2.days, correct: false)
 
     due_words = WordsDueForRecall.call(day: @created_on + 3.days)
 
     assert_includes due_words, @word
-  end
-
-  test "overdue word keeps appearing until a later correct recall exists" do
-    create_record!(created_on: @created_on, correct: true)
-    create_record!(created_on: @created_on + 2.days, correct: false)
-
-    assert_includes WordsDueForRecall.call(day: @created_on + 4.days), @word
 
     create_record!(created_on: @created_on + 4.days, correct: true)
 
@@ -63,14 +75,16 @@ class WordsDueForRecallTest < ActiveSupport::TestCase
     assert_includes WordsDueForRecall.call(day: @created_on + 7.days), @word
   end
 
-  test "word stops appearing after sixth correct recall" do
+  test "sixth correct recall completes the word and clears due day" do
     6.times do |index|
       create_record!(created_on: @created_on + index.days, correct: true)
     end
 
-    due_words = WordsDueForRecall.call(day: @created_on + 100.days)
+    @word.word_recall_state.reload
 
-    assert_not_includes due_words, @word
+    assert_equal 6, @word.word_recall_state.remember_times
+    assert_nil @word.word_recall_state.due_day
+    assert_not_includes WordsDueForRecall.call(day: @created_on + 100.days), @word
   end
 
   test "due helper returns true when interval has elapsed" do
@@ -108,13 +122,6 @@ class WordsDueForRecallTest < ActiveSupport::TestCase
 
   private
 
-  def set_word_created_on(word, date)
-    word.update!(
-      created_at: time_on(date, hour: 9),
-      updated_at: time_on(date, hour: 9)
-    )
-  end
-
   def create_record!(created_on:, correct:)
     WordQuestionRecord.create!(
       word_question: @question,
@@ -134,11 +141,14 @@ class WordsDueForRecallTest < ActiveSupport::TestCase
     question
   end
 
-  def create_word!(base_english)
+  def create_word!(base_english, created_on:)
     token = "#{base_english}-#{SecureRandom.hex(4)}"
     Word.create!(
+      word: token,
       chinese_meaning: "zh-#{token}",
-      english_meaning: token
+      english_meaning: token,
+      created_at: time_on(created_on, hour: 9),
+      updated_at: time_on(created_on, hour: 9)
     )
   end
 
