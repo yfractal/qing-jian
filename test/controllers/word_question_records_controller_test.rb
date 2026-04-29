@@ -5,18 +5,18 @@ require "test_helper"
 class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
   def setup
     @word = Word.create!(
-      word: "test_word_#{Time.now.to_i}",
+      word: "test_word_#{SecureRandom.hex(4)}",
       english_meaning: "test",
       chinese_meaning: "测试"
     )
     @question = WordQuestion.new(word: @word)
-    @question.similar_words.build(word: Word.create!(word: "similar_1_#{Time.now.to_i}", english_meaning: "s1", chinese_meaning: "s1"))
-    @question.similar_words.build(word: Word.create!(word: "similar_2_#{Time.now.to_i}", english_meaning: "s2", chinese_meaning: "s2"))
-    @question.similar_words.build(word: Word.create!(word: "similar_3_#{Time.now.to_i}", english_meaning: "s3", chinese_meaning: "s3"))
+    @question.similar_words.build(word: Word.create!(word: "similar_1_#{SecureRandom.hex(4)}", english_meaning: "s1", chinese_meaning: "s1"))
+    @question.similar_words.build(word: Word.create!(word: "similar_2_#{SecureRandom.hex(4)}", english_meaning: "s2", chinese_meaning: "s2"))
+    @question.similar_words.build(word: Word.create!(word: "similar_3_#{SecureRandom.hex(4)}", english_meaning: "s3", chinese_meaning: "s3"))
     @question.save!
   end
 
-  test "creates a correct record and redirects to root" do
+  test "creates a correct record and redirects to root with recalled word id" do
     assert_difference("WordQuestionRecord.count", 1) do
       post word_question_records_url, params: {
         word_question_record: {
@@ -28,10 +28,10 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
 
     record = WordQuestionRecord.order(:created_at).last
     assert_equal true, record.is_correct
-    assert_redirected_to root_url
+    assert_redirected_to root_url(recalled_word_ids: @word.id.to_s)
   end
 
-  test "creates an incorrect record and redirects to root" do
+  test "creates an incorrect record and redirects to root with recalled word id" do
     wrong_word = @question.similar_words.first.word
 
     assert_difference("WordQuestionRecord.count", 1) do
@@ -45,6 +45,57 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
 
     record = WordQuestionRecord.order(:created_at).last
     assert_equal false, record.is_correct
-    assert_redirected_to root_url
+    assert_redirected_to root_url(recalled_word_ids: @word.id.to_s)
+  end
+
+  test "appends recalled word id to existing url state" do
+    previous_word = Word.create!(
+      word: "previous_#{SecureRandom.hex(4)}",
+      english_meaning: "previous",
+      chinese_meaning: "previous"
+    )
+
+    post word_question_records_url, params: {
+      recalled_word_ids: previous_word.id.to_s,
+      word_question_record: {
+        word_question_id: @question.id,
+        picked_word_id: @word.id
+      }
+    }
+
+    assert_redirected_to root_url(recalled_word_ids: "#{previous_word.id},#{@word.id}")
+  end
+
+  test "does not duplicate recalled word id on redirect" do
+    post word_question_records_url, params: {
+      recalled_word_ids: @word.id.to_s,
+      word_question_record: {
+        word_question_id: @question.id,
+        picked_word_id: @word.id
+      }
+    }
+
+    assert_redirected_to root_url(recalled_word_ids: @word.id.to_s)
+  end
+
+  test "preserves existing recalled word ids when record creation fails" do
+    previous_word = Word.create!(
+      word: "previous_failure_#{SecureRandom.hex(4)}",
+      english_meaning: "previous failure",
+      chinese_meaning: "previous failure"
+    )
+
+    assert_no_difference("WordQuestionRecord.count") do
+      post word_question_records_url, params: {
+        recalled_word_ids: previous_word.id.to_s,
+        word_question_record: {
+          word_question_id: "missing",
+          picked_word_id: @word.id
+        }
+      }
+    end
+
+    assert_redirected_to root_url(recalled_word_ids: previous_word.id.to_s)
+    assert_equal "Could not save answer.", flash[:alert]
   end
 end
