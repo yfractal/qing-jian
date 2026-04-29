@@ -1,0 +1,36 @@
+<% content_for :title, "Words" %>
+
+<h1>Words</h1>
+
+<p class="toolbar">
+  <%= link_to "Add new word", new_word_path, class: "button button-primary" %>
+</p>
+
+<% if @words.any? %>
+  <table class="word-table">
+    <thead>
+      <tr>
+        <th>Word</th>
+        <th>English meaning</th>
+        <th>Chinese meaning</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @words.each do |word| %>
+        <tr>
+          <td><strong><%= word.word %></strong></td>
+          <td><%= truncate(word.english_meaning, length: 80) %></td>
+          <td><%= truncate(word.chinese_meaning, length: 80) %></td>
+          <td class="actions-cell">
+            <%= link_to "Show", word_path(word), class: "button button-small" %>
+            <%= link_to "Edit", edit_word_path(word), class: "button button-small" %>
+            <%= button_to "Delete", word_path(word), method: :delete, class: "button button-small button-danger", form: { data: { turbo_confirm: "Delete this word?" } } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p>No words yet. <%= link_to "Add your first word", new_word_path %>.</p>
+<% end %>

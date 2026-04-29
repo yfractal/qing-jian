@@ -1,0 +1,32 @@
+<%= form_with model: word, local: true do |f| %>
+  <% if word.errors.any? %>
+    <div class="form-errors" role="alert">
+      <h2><%= pluralize(word.errors.count, "error") %> prevented this word from being saved:</h2>
+      <ul>
+        <% word.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :word, "English word" %>
+    <%= f.text_field :word, required: true, autocomplete: "off" %>
+  </div>
+
+  <div class="field">
+    <%= f.label :english_meaning, "English meaning" %>
+    <%= f.text_area :english_meaning, rows: 4, required: true %>
+  </div>
+
+  <div class="field">
+    <%= f.label :chinese_meaning, "Chinese meaning" %>
+    <%= f.text_area :chinese_meaning, rows: 4, required: true %>
+  </div>
+
+  <div class="actions">
+    <%= f.submit word.persisted? ? "Update word" : "Save word", class: "button button-primary" %>
+    <%= link_to "Cancel", words_path, class: "button button-secondary" %>
+  </div>
+<% end %>

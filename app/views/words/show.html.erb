@@ -1,0 +1,20 @@
+<% content_for :title, @word.word %>
+
+<h1><%= @word.word %></h1>
+
+<% if flash[:notice].present? %>
+  <p class="flash flash-notice"><%= flash[:notice] %></p>
+<% end %>
+
+<dl class="word-detail">
+  <dt>English meaning</dt>
+  <dd><%= simple_format(@word.english_meaning) %></dd>
+  <dt>Chinese meaning</dt>
+  <dd><%= simple_format(@word.chinese_meaning) %></dd>
+</dl>
+
+<p class="actions">
+  <%= link_to "Edit", edit_word_path(@word), class: "button button-primary" %>
+  <%= button_to "Delete", word_path(@word), method: :delete, class: "button button-danger", form: { data: { turbo_confirm: "Delete this word?" } } %>
+  <%= link_to "All words", words_path, class: "button button-secondary" %>
+</p>

@@ -1,0 +1,11 @@
+<% content_for :title, "Edit #{@word.word}" %>
+
+<h1>Edit word</h1>
+
+<% if flash.now[:alert].present? %>
+  <p class="flash flash-alert" role="alert"><%= flash.now[:alert] %></p>
+<% end %>
+
+<%= render "form", word: @word %>
+
+<p><%= link_to "Show", @word %> · <%= link_to "Back to words", words_path %></p>

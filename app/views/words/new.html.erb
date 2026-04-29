@@ -1,0 +1,33 @@
+<% content_for :title, "New word" %>
+
+<h1>New word</h1>
+
+<% if flash[:notice].present? %>
+  <p class="flash flash-notice"><%= flash[:notice] %></p>
+<% end %>
+<% if flash.now[:alert].present? %>
+  <p class="flash flash-alert" role="alert"><%= flash.now[:alert] %></p>
+<% end %>
+
+<section class="card lookup-section">
+  <h2>Look up meanings</h2>
+  <p>Enter an English word. We will suggest English and Chinese meanings; you can edit them before saving.</p>
+  <%= form_with url: lookup_words_path, method: :post, local: true do %>
+    <div class="field">
+      <%= label_tag :english_word, "English word" %>
+      <%= text_field_tag :english_word, params[:english_word], required: true, autocomplete: "off" %>
+    </div>
+    <div class="actions">
+      <%= submit_tag "Look up", class: "button button-primary" %>
+    </div>
+  <% end %>
+</section>
+
+<% if @word.errors.any? || @word.word.present? %>
+  <section class="card">
+    <h2>Review and save</h2>
+    <%= render "form", word: @word %>
+  </section>
+<% end %>
+
+<p><%= link_to "Back to words", words_path %></p>
