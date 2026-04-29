@@ -11,7 +11,6 @@ A project for remember words easily.
 
 The OpenRouter clients (`OpenRouterWordMeaningClient` and `OpenRouterSimilarWordsClient`) read these env vars:
 - `OPENROUTER_API_KEY` (required)
-- `OPENROUTER_MODEL` (optional, defaults to `deepseek/deepseek-v4-pro`)
 
 ## scenarios
 - Adding Word
