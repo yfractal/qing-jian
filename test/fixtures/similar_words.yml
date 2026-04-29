@@ -1,3 +1,15 @@
 dog_similar_to_cat:
   similar_wordable: cat (Word)
   word: dog
+
+dog_choice_for_cat_question:
+  similar_wordable: cat_question (WordQuestion)
+  word: dog
+
+fish_choice_for_cat_question:
+  similar_wordable: cat_question (WordQuestion)
+  word: fish
+
+dog_second_choice_for_cat_question:
+  similar_wordable: cat_question (WordQuestion)
+  word: dog
