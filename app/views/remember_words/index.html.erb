@@ -1,0 +1,29 @@
+<% content_for :title, "Remember words" %>
+
+<h1>Remember words</h1>
+
+<p class="toolbar">
+  <%= link_to "Add new word", new_word_path, class: "button button-primary" %>
+</p>
+
+<% if @question.present? %>
+  <section class="recall-card">
+    <h2><%= @question.word.chinese_meaning %></h2>
+    <p>Choose the correct English word.</p>
+
+    <%= form_with model: @word_question_record, url: word_question_records_path do |form| %>
+      <%= form.hidden_field :word_question_id, value: @question.id %>
+
+      <% @question.choices.shuffle.each do |choice| %>
+        <label>
+          <%= radio_button_tag "word_question_record[picked_word_id]", choice.id, false, required: true %>
+          <%= choice.word %>
+        </label><br>
+      <% end %>
+
+      <%= form.submit "Submit answer", class: "button button-primary" %>
+    <% end %>
+  </section>
+<% else %>
+  <p>No words due today. Nice work!</p>
+<% end %>

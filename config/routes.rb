@@ -10,7 +10,7 @@ Rails.application.routes.draw do
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   # Defines the root path route ("/")
-  root "words#index"
+  root "remember_words#index"
 
   resources :words do
     collection do
@@ -19,4 +19,5 @@ Rails.application.routes.draw do
       post :batch_create
     end
   end
+  resources :word_question_records, only: :create
 end
