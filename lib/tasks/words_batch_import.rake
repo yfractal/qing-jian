@@ -16,7 +16,7 @@ namespace :words do
       exit 1
     end
 
-    client = OpenRouterWordMeaningClient.new
+    client = Llm::OpenRouterWordMeaningClient.new
     meanings = client.batch_lookup(words)
 
     created = 0
@@ -38,7 +38,7 @@ namespace :words do
     puts "Successfully created #{created} words"
     puts "Failed to create #{failed.size} words" unless failed.empty?
     failed.each { |line| puts line }
-  rescue OpenRouterWordMeaningClient::Error => e
+  rescue Llm::OpenRouterWordMeaningClient::Error => e
     puts "Batch lookup failed: #{e.message}"
     exit 1
   end

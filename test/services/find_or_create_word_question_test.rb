@@ -10,7 +10,7 @@ class FindOrCreateWordQuestionTest < ActiveSupport::TestCase
     end
     outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
     requester = ->(_body) { OpenStruct.new(code: "200", body: JSON.generate(outer)) }
-    llm_client = OpenRouterSimilarWordsClient.new(api_key: "test-key", requester: requester)
+    llm_client = Llm::OpenRouterSimilarWordsClient.new(api_key: "test-key", requester: requester)
     FindOrCreateWordQuestion.new(llm_client: llm_client)
   end
 

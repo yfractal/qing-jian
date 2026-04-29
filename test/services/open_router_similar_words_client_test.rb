@@ -2,6 +2,7 @@
 
 require "test_helper"
 require "ostruct"
+require "stringio"
 
 class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
   setup do
@@ -19,24 +20,24 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
   end
 
   test "similar_words raises when api key is missing" do
-    client = OpenRouterSimilarWordsClient.new(api_key: "", requester: ->(*) { raise "should not call" })
-    error = assert_raises(OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
+    client = Llm::OpenRouterSimilarWordsClient.new(api_key: "", requester: ->(*) { raise "should not call" })
+    error = assert_raises(Llm::OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
     assert_equal "OPENROUTER_API_KEY is not set", error.message
   end
 
   test "similar_words raises when word is blank" do
-    client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(*) { raise "should not call" })
-    error = assert_raises(OpenRouterSimilarWordsClient::Error) { client.similar_words("   ") }
+    client = Llm::OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(*) { raise "should not call" })
+    error = assert_raises(Llm::OpenRouterSimilarWordsClient::Error) { client.similar_words("   ") }
     assert_equal "word is blank", error.message
   end
 
   test "similar_words returns results on success" do
     response = OpenStruct.new(code: "200", body: JSON.generate(@valid_outer))
-    client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
+    client = Llm::OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
     results = client.similar_words("cat")
     assert_equal 3, results.size
-    assert_instance_of OpenRouterSimilarWordsClient::SimilarWordResult, results.first
+    assert_instance_of Llm::OpenRouterSimilarWordsClient::SimilarWordResult, results.first
     assert_equal "kitten", results[0].word
     assert_equal "A young cat.", results[0].english_meaning
     assert_equal "小猫", results[0].chinese_meaning
@@ -44,27 +45,27 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
 
   test "similar_words raises on non success status" do
     response = OpenStruct.new(code: "401", body: '{"error":"unauthorized"}')
-    client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
+    client = Llm::OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
-    error = assert_raises(OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
+    error = assert_raises(Llm::OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
     assert_match(/OpenRouter request failed \(401\)/, error.message)
   end
 
   test "similar_words raises when message content is missing" do
     outer = { "choices" => [ { "message" => { "content" => "" } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
-    client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
+    client = Llm::OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
-    error = assert_raises(OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
+    error = assert_raises(Llm::OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
     assert_match(/missing message content/, error.message)
   end
 
   test "similar_words raises when inner json is not an array" do
     outer = { "choices" => [ { "message" => { "content" => '{"word":"x"}' } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
-    client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
+    client = Llm::OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
-    error = assert_raises(OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
+    error = assert_raises(Llm::OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
     assert_match(/expected a JSON array/, error.message)
   end
 
@@ -72,9 +73,9 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
     inner = @valid_inner.first(2)
     outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
-    client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
+    client = Llm::OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
-    error = assert_raises(OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
+    error = assert_raises(Llm::OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
     assert_match(/expected exactly 3 similar words/, error.message)
   end
 
@@ -86,18 +87,18 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
     ]
     outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
-    client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
+    client = Llm::OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
-    error = assert_raises(OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
+    error = assert_raises(Llm::OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
     assert_match(/missing required key/, error.message)
   end
 
   test "similar_words raises when inner json is malformed" do
     outer = { "choices" => [ { "message" => { "content" => "not json" } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
-    client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
+    client = Llm::OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
-    error = assert_raises(OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
+    error = assert_raises(Llm::OpenRouterSimilarWordsClient::Error) { client.similar_words("cat") }
     assert_match(/Invalid JSON from OpenRouter/, error.message)
   end
 
@@ -106,7 +107,7 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
     response = OpenStruct.new(code: "200", body: JSON.generate(@valid_outer))
     old_model = ENV.fetch("OPENROUTER_MODEL", nil)
     ENV.delete("OPENROUTER_MODEL")
-    client = OpenRouterSimilarWordsClient.new(
+    client = Llm::OpenRouterSimilarWordsClient.new(
       api_key: @api_key,
       requester: lambda { |body|
         captured = JSON.parse(body)
@@ -118,5 +119,28 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
     assert_equal "deepseek/deepseek-v4-pro", captured["model"]
   ensure
     ENV["OPENROUTER_MODEL"] = old_model if old_model
+  end
+
+  test "similar_words logs request start and finish with timing metadata" do
+    log_output = StringIO.new
+    logger = Logger.new(log_output)
+    response = OpenStruct.new(code: "200", body: JSON.generate(@valid_outer))
+
+    old_logger = Rails.logger
+    Rails.logger = logger
+    begin
+      client = Llm::OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
+      client.similar_words("cat")
+    ensure
+      Rails.logger = old_logger
+    end
+
+    logs = log_output.string
+    assert_match(/llm\.request\.start/, logs)
+    assert_match(/model=deepseek\/deepseek-v4-pro/, logs)
+    assert_match(/prompt=/, logs)
+    assert_match(/llm\.request\.finish/, logs)
+    assert_match(/end_time=/, logs)
+    assert_match(/duration_ms=\d+/, logs)
   end
 end

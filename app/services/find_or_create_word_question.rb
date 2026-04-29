@@ -2,7 +2,7 @@
 
 # Finds an existing WordQuestion for a word, or creates one via LLM-suggested similar words.
 class FindOrCreateWordQuestion
-  def initialize(llm_client: OpenRouterSimilarWordsClient.new)
+  def initialize(llm_client: Llm::OpenRouterSimilarWordsClient.new)
     @llm_client = llm_client
   end
 

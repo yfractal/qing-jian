@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class WordsController < ApplicationController
-  class_attribute :meaning_client_class, default: OpenRouterWordMeaningClient
+  class_attribute :meaning_client_class, default: Llm::OpenRouterWordMeaningClient
 
   before_action :set_word, only: %i[show edit update destroy]
 
@@ -31,7 +31,7 @@ class WordsController < ApplicationController
       chinese_meaning: result.chinese_meaning
     )
     render :new
-  rescue OpenRouterWordMeaningClient::Error => e
+  rescue Llm::OpenRouterWordMeaningClient::Error => e
     flash.now[:alert] = e.message
     @word = Word.new(word: trimmed)
     render :new, status: :unprocessable_entity
@@ -59,7 +59,7 @@ class WordsController < ApplicationController
         }
       end
     }
-  rescue OpenRouterWordMeaningClient::Error => e
+  rescue Llm::OpenRouterWordMeaningClient::Error => e
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
