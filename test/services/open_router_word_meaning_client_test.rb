@@ -45,7 +45,7 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
   end
 
   test "lookup raises when message content is missing" do
-    outer = { "choices" => [{ "message" => { "content" => "" } }] }
+    outer = { "choices" => [ { "message" => { "content" => "" } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
     client = OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
 
@@ -54,7 +54,7 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
   end
 
   test "lookup raises when inner json is malformed" do
-    outer = { "choices" => [{ "message" => { "content" => "not json" } }] }
+    outer = { "choices" => [ { "message" => { "content" => "not json" } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
     client = OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
 
@@ -63,7 +63,7 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
   end
 
   test "lookup raises when inner json missing keys" do
-    outer = { "choices" => [{ "message" => { "content" => '{"english_meaning":"x"}' } }] }
+    outer = { "choices" => [ { "message" => { "content" => '{"english_meaning":"x"}' } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
     client = OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
 
@@ -74,7 +74,7 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
   test "default model is deepseek v4 pro when env model unset" do
     captured = nil
     response = OpenStruct.new(code: "200", body: JSON.generate(
-      "choices" => [{ "message" => { "content" => '{"english_meaning":"a","chinese_meaning":"b"}' } }]
+      "choices" => [ { "message" => { "content" => '{"english_meaning":"a","chinese_meaning":"b"}' } } ]
     ))
     old_model = ENV.fetch("OPENROUTER_MODEL", nil)
     ENV.delete("OPENROUTER_MODEL")

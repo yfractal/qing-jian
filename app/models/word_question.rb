@@ -7,7 +7,7 @@ class WordQuestion < ApplicationRecord
   validate :exactly_three_similar_words
 
   def choices
-    [word] + similar_words.map(&:word)
+    [ word ] + similar_words.map(&:word)
   end
 
   private

@@ -51,7 +51,7 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
   end
 
   test "similar_words raises when message content is missing" do
-    outer = { "choices" => [{ "message" => { "content" => "" } }] }
+    outer = { "choices" => [ { "message" => { "content" => "" } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
     client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
@@ -60,7 +60,7 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
   end
 
   test "similar_words raises when inner json is not an array" do
-    outer = { "choices" => [{ "message" => { "content" => '{"word":"x"}' } }] }
+    outer = { "choices" => [ { "message" => { "content" => '{"word":"x"}' } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
     client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
@@ -70,7 +70,7 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
 
   test "similar_words raises when array has wrong count" do
     inner = @valid_inner.first(2)
-    outer = { "choices" => [{ "message" => { "content" => JSON.generate(inner) } }] }
+    outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
     client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
@@ -84,7 +84,7 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
       { "word" => "feline", "english_meaning" => "...", "chinese_meaning" => "猫科动物" },
       { "word" => "tomcat", "english_meaning" => "...", "chinese_meaning" => "雄猫" }
     ]
-    outer = { "choices" => [{ "message" => { "content" => JSON.generate(inner) } }] }
+    outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
     client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 
@@ -93,7 +93,7 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
   end
 
   test "similar_words raises when inner json is malformed" do
-    outer = { "choices" => [{ "message" => { "content" => "not json" } }] }
+    outer = { "choices" => [ { "message" => { "content" => "not json" } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
     client = OpenRouterSimilarWordsClient.new(api_key: @api_key, requester: ->(_body) { response })
 

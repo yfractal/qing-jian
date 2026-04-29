@@ -3,7 +3,7 @@ require "test_helper"
 class WordQuestionTest < ActiveSupport::TestCase
   def build_question_with_similar_count(count)
     question = WordQuestion.new(word: words(:cat))
-    similar_words = [words(:dog), words(:fish), words(:bird)].first(count)
+    similar_words = [ words(:dog), words(:fish), words(:bird) ].first(count)
     similar_words.each do |word|
       question.similar_words.build(word: word)
     end
