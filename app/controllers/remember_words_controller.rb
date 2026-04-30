@@ -83,11 +83,17 @@ class RememberWordsController < ApplicationController
   end
 
   def load_progress_counts!
-    due_words = WordsDueForRecall.call(day: Date.current)
-    due_word_ids = due_words.pluck(:id)
-    @remember_total_count = due_word_ids.size
-    @remembered_count = (@recalled_word_ids & due_word_ids).size
-    @remaining_count = @remember_total_count - @remembered_count
+    current_due_word_ids = WordsDueForRecall.call(day: Date.current).pluck(:id)
+    remembered_today_word_ids = WordQuestionRecord
+      .joins(:word_question)
+      .where(is_correct: true, created_at: Time.zone.today.all_day)
+      .distinct
+      .pluck("word_questions.word_id")
+    progress_word_ids = current_due_word_ids | remembered_today_word_ids
+
+    @remember_total_count = progress_word_ids.size
+    @remembered_count = remembered_today_word_ids.size
+    @remaining_count = current_due_word_ids.size
     @progress_percent = if @remember_total_count.zero?
       0
     else

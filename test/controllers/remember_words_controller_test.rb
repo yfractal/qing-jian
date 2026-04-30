@@ -15,8 +15,9 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a", "Add new word"
   end
 
-  test "shows remembered and remaining counts for current due words" do
+  test "progress ignores recalled_word_ids when no correct record exists today" do
     WordRecallState.update_all(due_day: Date.current + 100.days)
+    WordQuestionRecord.delete_all
     first_word = create_due_word!("progress_first")
     second_word = create_due_word!("progress_second")
     create_question_for!(first_word)
@@ -26,6 +27,30 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".remember-progress-card"
+    assert_select ".remember-progress-main", text: /Remembered 0 \/ 2/
+    assert_select ".remember-progress-meta", text: /Need to remember 2/
+  end
+
+  test "progress includes remembered-today words after due_day advances" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    WordQuestionRecord.delete_all
+    remembered_word = create_due_word!("remembered_today")
+    still_due_word = create_due_word!("still_due_today")
+    remembered_question = create_question_for!(remembered_word)
+    create_question_for!(still_due_word)
+
+    WordQuestionRecord.create!(
+      word_question: remembered_question,
+      picked_choice_token: "word:#{remembered_word.id}",
+      picked_choice_word: remembered_word.word,
+      is_correct: true,
+      created_at: Time.zone.now
+    )
+
+    get root_url
+
+    assert_response :success
+    assert_equal Date.current + 2.days, remembered_word.reload.word_recall_state.due_day
     assert_select ".remember-progress-main", text: /Remembered 1 \/ 2/
     assert_select ".remember-progress-meta", text: /Need to remember 1/
   end
