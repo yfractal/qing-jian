@@ -21,6 +21,15 @@
     </label>
   <% end %>
 
+  <section class="remember-progress-card" aria-label="Remember progress">
+    <p class="eyebrow">Remember Progress</p>
+    <p class="remember-progress-main">Remembered <%= @remembered_count %> / <%= @remember_total_count %></p>
+    <p class="remember-progress-meta">Need to remember <%= @remaining_count %></p>
+    <div class="remember-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= @progress_percent %>">
+      <div class="remember-progress-fill" style="width: <%= @progress_percent %>%"></div>
+    </div>
+  </section>
+
   <% if @question.present? %>
     <% prompt_text = english_to_chinese? ? "Choose the correct Chinese meaning." : "Choose the correct English word." %>
     <% question_text = english_to_chinese? ? @question.word.word : @question.word.chinese_meaning %>

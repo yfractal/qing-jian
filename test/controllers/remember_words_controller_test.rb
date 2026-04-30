@@ -15,6 +15,21 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a", "Add new word"
   end
 
+  test "shows remembered and remaining counts for current due words" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    first_word = create_due_word!("progress_first")
+    second_word = create_due_word!("progress_second")
+    create_question_for!(first_word)
+    create_question_for!(second_word)
+
+    get root_url(recalled_word_ids: first_word.id.to_s)
+
+    assert_response :success
+    assert_select ".remember-progress-card"
+    assert_select ".remember-progress-main", text: /Remembered 1 \/ 2/
+    assert_select ".remember-progress-meta", text: /Need to remember 1/
+  end
+
   test "renders question form when question is available" do
     WordRecallState.update_all(due_day: Date.current + 100.days)
     word = create_due_word!("test")

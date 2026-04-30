@@ -4,6 +4,7 @@ class RememberWordsController < ApplicationController
   def index
     @direction = normalized_direction
     @recalled_word_ids = recalled_word_ids
+    load_progress_counts!
 
     if load_result_state
       return
@@ -79,5 +80,18 @@ class RememberWordsController < ApplicationController
     return nil unless word
 
     FindOrCreateWordQuestion.new.call(word: word)
+  end
+
+  def load_progress_counts!
+    due_words = WordsDueForRecall.call(day: Date.current)
+    due_word_ids = due_words.pluck(:id)
+    @remember_total_count = due_word_ids.size
+    @remembered_count = (@recalled_word_ids & due_word_ids).size
+    @remaining_count = @remember_total_count - @remembered_count
+    @progress_percent = if @remember_total_count.zero?
+      0
+    else
+      ((@remembered_count.to_f / @remember_total_count) * 100).round
+    end
   end
 end
