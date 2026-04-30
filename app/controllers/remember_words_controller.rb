@@ -22,6 +22,13 @@ class RememberWordsController < ApplicationController
     @word_question_record = WordQuestionRecord.new(word_question: @question) if @question
   end
 
+  def today
+    @today_words = TodayWordsProgress.call(day: Date.current)
+    @reviewed_count = @today_words.count { |item| item[:reviewed] }
+    @total_count = @today_words.size
+    @pending_count = @total_count - @reviewed_count
+  end
+
   private
 
   def normalized_direction
