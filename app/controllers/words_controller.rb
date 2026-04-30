@@ -66,7 +66,6 @@ class WordsController < ApplicationController
   def create
     @word = Word.new(word_params)
     if @word.save
-      CreateWordQuestionJob.perform_later(@word.id)
       redirect_to @word, notice: "Word was successfully created."
     else
       flash.now[:alert] = "Could not save word."
@@ -99,7 +98,8 @@ class WordsController < ApplicationController
       word = Word.new(
         word: entry[:word] || entry["word"],
         english_meaning: entry[:english_meaning] || entry["english_meaning"],
-        chinese_meaning: entry[:chinese_meaning] || entry["chinese_meaning"]
+        chinese_meaning: entry[:chinese_meaning] || entry["chinese_meaning"],
+        skip_create_word_question_job: true
       )
 
       if word.save
