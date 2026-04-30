@@ -1,0 +1,36 @@
+<% content_for :title, "Today Words" %>
+
+<main class="remember-page today-words-page">
+  <header class="remember-header">
+    <div>
+      <p class="eyebrow">Daily Review</p>
+      <h1>Today Words</h1>
+      <p class="remember-progress-meta">Reviewed <%= @reviewed_count %> / <%= @total_count %> · Pending <%= @pending_count %></p>
+    </div>
+    <%= link_to "Back to Review", root_path, class: "button button-secondary" %>
+  </header>
+
+  <% if @today_words.any? %>
+    <section class="today-words-list" aria-label="Today word list">
+      <% @today_words.each do |item| %>
+        <% word = item[:word] %>
+        <article class="today-word-item">
+          <div class="today-word-main">
+            <p class="today-word-text"><%= word.word %></p>
+            <p class="today-word-pronunciation"><%= word.pronunciation.presence || "-" %></p>
+          </div>
+          <p class="today-word-meaning"><%= word.chinese_meaning %></p>
+          <span class="today-word-status <%= item[:reviewed] ? "today-word-status-reviewed" : "today-word-status-pending" %>">
+            <%= item[:reviewed] ? "Reviewed" : "Not reviewed" %>
+          </span>
+        </article>
+      <% end %>
+    </section>
+  <% else %>
+    <section class="completion-card">
+      <p class="eyebrow">Daily Review</p>
+      <h2>No words today</h2>
+      <p>You have no review workload for today.</p>
+    </section>
+  <% end %>
+</main>

@@ -290,6 +290,41 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_match "You have recalled all words due today.", @response.body
   end
 
+  test "today page lists word, pronunciation, chinese meaning, and review status" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    reviewed_word = create_due_word!("reviewed_item")
+    pending_word = create_due_word!("pending_item")
+    reviewed_word.update!(pronunciation: "/reviewed/")
+    pending_word.update!(pronunciation: "/pending/")
+    reviewed_question = create_question_for!(reviewed_word)
+
+    WordQuestionRecord.create!(
+      word_question: reviewed_question,
+      picked_choice_token: "word:#{reviewed_word.id}",
+      picked_choice_word: reviewed_word.word,
+      is_correct: true,
+      created_at: Time.zone.now
+    )
+
+    get today_words_url
+
+    assert_response :success
+    assert_select "h1", "Today Words"
+    assert_select ".today-word-item", minimum: 2
+    assert_select ".today-word-status-reviewed", text: /Reviewed/
+    assert_select ".today-word-status-pending", text: /Not reviewed/
+    assert_match reviewed_word.chinese_meaning, @response.body
+    assert_match "/reviewed/", @response.body
+  end
+
+  test "remember progress card links to today words page" do
+    get root_url
+
+    assert_response :success
+    assert_select "a.remember-progress-card[href='#{today_words_path}']"
+    assert_select "a.remember-progress-card", text: /Remembered \d+ \/ \d+/
+  end
+
   private
 
   def create_due_word!(name)
