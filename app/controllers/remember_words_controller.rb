@@ -4,6 +4,11 @@ class RememberWordsController < ApplicationController
   def index
     @direction = normalized_direction
     @recalled_word_ids = recalled_word_ids
+
+    if load_result_state
+      return
+    end
+
     due_words = WordsDueForRecall.call(day: Date.current)
     filtered_due_words = WordsDueForRecall.call(day: Date.current, excluding_word_ids: @recalled_word_ids)
 
@@ -30,6 +35,37 @@ class RememberWordsController < ApplicationController
       parsed_id if parsed_id&.positive?
     end.uniq
   end
+
+  def load_result_state
+    @result_record = WordQuestionRecord.includes(word_question: :similar_words).find_by(id: params[:result_record_id])
+    return false unless @result_record
+
+    @question = @result_record.word_question
+    @word_question_record = @result_record
+    @selected_choice_token = @result_record.picked_choice_token
+    @correct_choice = @question.choices.find(&:correct)
+    @next_word_path = root_path(
+      direction: @direction,
+      recalled_word_ids: (@recalled_word_ids + [ @question.word_id ]).uniq.join(",")
+    )
+
+    true
+  end
+
+  def result_state?
+    @result_record.present?
+  end
+  helper_method :result_state?
+
+  def choice_display_text(choice)
+    english_to_chinese? ? choice.chinese_meaning : choice.word
+  end
+  helper_method :choice_display_text
+
+  def english_to_chinese?
+    @direction == "english_to_chinese"
+  end
+  helper_method :english_to_chinese?
 
   def pass_cleared_notice(due_words)
     if due_words.exists?

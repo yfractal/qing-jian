@@ -1,45 +1,98 @@
-<% content_for :title, "Remember words" %>
+<% content_for :title, "Remember Words" %>
 
-<h1>Remember words</h1>
+<main class="remember-page">
+  <header class="remember-header">
+    <div>
+      <p class="eyebrow">Daily Review</p>
+      <h1>Remember Words</h1>
+    </div>
 
-<p class="toolbar">
-  <%= link_to "Add new word", new_word_path, class: "button button-primary" %>
-</p>
+    <%= link_to "Add new word", new_word_path, class: "button button-secondary" %>
+  </header>
 
-<%= form_with url: root_path, method: :get, local: true, class: "direction-form" do %>
-  <label>
-    <%= radio_button_tag :direction, "english_to_chinese", @direction == "english_to_chinese", onchange: "this.form.submit()" %>
-    English to Chinese
-  </label>
-  <label>
-    <%= radio_button_tag :direction, "chinese_to_english", @direction == "chinese_to_english", onchange: "this.form.submit()" %>
-    Chinese to English
-  </label>
-<% end %>
+  <%= form_with url: root_path, method: :get, local: true, class: "direction-tabs" do %>
+    <label class="direction-tab <%= "direction-tab-active" if @direction == "english_to_chinese" %>">
+      <%= radio_button_tag :direction, "english_to_chinese", @direction == "english_to_chinese", onchange: "this.form.submit()" %>
+      English -> Chinese
+    </label>
+    <label class="direction-tab <%= "direction-tab-active" if @direction == "chinese_to_english" %>">
+      <%= radio_button_tag :direction, "chinese_to_english", @direction == "chinese_to_english", onchange: "this.form.submit()" %>
+      Chinese -> English
+    </label>
+  <% end %>
 
-<% if @question.present? %>
-  <% english_to_chinese = @direction == "english_to_chinese" %>
-  <% prompt_text = english_to_chinese ? "Choose the correct Chinese meaning." : "Choose the correct English word." %>
-  <% question_text = english_to_chinese ? @question.word.word : @question.word.chinese_meaning %>
-  <section class="recall-card">
-    <h2><%= question_text %></h2>
-    <p><%= prompt_text %></p>
+  <% if @question.present? %>
+    <% prompt_text = english_to_chinese? ? "Choose the correct Chinese meaning." : "Choose the correct English word." %>
+    <% question_text = english_to_chinese? ? @question.word.word : @question.word.chinese_meaning %>
 
-    <%= form_with model: @word_question_record, url: word_question_records_path do |form| %>
-      <%= hidden_field_tag :direction, @direction %>
-      <%= hidden_field_tag :recalled_word_ids, @recalled_word_ids.join(",") if @recalled_word_ids.present? %>
-      <%= form.hidden_field :word_question_id, value: @question.id %>
+    <section class="recall-card">
+      <div class="question-block">
+        <p class="question-helper"><%= prompt_text %></p>
+        <h2><%= question_text %></h2>
+      </div>
 
-      <% @question.choices.shuffle.each do |choice| %>
-        <label>
-          <%= radio_button_tag "word_question_record[picked_choice]", choice.token, false, required: true %>
-          <%= english_to_chinese ? choice.chinese_meaning : choice.word %>
-        </label><br>
+      <% if result_state? %>
+        <% correct = @word_question_record.correct? %>
+        <div class="feedback-panel <%= correct ? "feedback-panel-correct" : "feedback-panel-incorrect" %>">
+          <p class="feedback-label"><%= correct ? "Correct" : "Not quite" %></p>
+          <p class="feedback-copy">
+            <%= correct ? "Nice. You chose the right meaning." : "Review the right answer, then continue." %>
+          </p>
+          <% unless correct %>
+            <p class="answer-reveal">Correct answer: <strong><%= choice_display_text(@correct_choice) %></strong></p>
+          <% end %>
+        </div>
+
+        <div class="choices-list" aria-label="Answer choices">
+          <% @question.choices.each do |choice| %>
+            <% selected = choice.token == @selected_choice_token %>
+            <% correct_choice = choice.correct %>
+            <% choice_classes = ["choice-card"] %>
+            <% choice_classes << "choice-correct" if correct_choice %>
+            <% choice_classes << "choice-selected-wrong" if selected && !correct_choice %>
+            <% choice_classes << "choice-selected" if selected && correct_choice %>
+
+            <div class="<%= choice_classes.join(" ") %>">
+              <span><%= choice_display_text(choice) %></span>
+              <% if correct_choice %>
+                <span class="choice-status">Correct answer</span>
+              <% elsif selected %>
+                <span class="choice-status">Your answer</span>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="actions">
+          <%= link_to "Next word", @next_word_path, class: "button button-primary button-large" %>
+        </div>
+      <% else %>
+        <%= form_with model: @word_question_record, url: word_question_records_path, class: "answer-form" do |form| %>
+          <%= hidden_field_tag :direction, @direction %>
+          <%= hidden_field_tag :recalled_word_ids, @recalled_word_ids.join(",") if @recalled_word_ids.present? %>
+          <%= form.hidden_field :word_question_id, value: @question.id %>
+
+          <div class="choices-list">
+            <% @question.choices.shuffle.each do |choice| %>
+              <label class="choice-card choice-card-input">
+                <%= radio_button_tag "word_question_record[picked_choice]", choice.token, false, required: true %>
+                <span><%= choice_display_text(choice) %></span>
+              </label>
+            <% end %>
+          </div>
+
+          <div class="actions">
+            <%= form.submit "Check answer", class: "button button-primary button-large" %>
+          </div>
+        <% end %>
       <% end %>
-
-      <%= form.submit "Submit answer", class: "button button-primary" %>
-    <% end %>
-  </section>
-<% else %>
-  <p>Congratulations! You have recalled all words due today.</p>
-<% end %>
+    </section>
+  <% else %>
+    <section class="completion-card">
+      <p class="eyebrow">Daily Review</p>
+      <h2>All caught up</h2>
+      <p>You have recalled all words due today.</p>
+      <%= link_to "Add new word", new_word_path, class: "button button-primary" %>
+    </section>
+  <% end %>
+</main>

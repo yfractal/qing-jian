@@ -16,7 +16,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
     @question.save!
   end
 
-  test "creates a correct record and redirects to root with recalled word id" do
+  test "creates a correct record and redirects to root with result record id" do
     assert_difference("WordQuestionRecord.count", 1) do
       post word_question_records_url, params: {
         word_question_record: {
@@ -28,10 +28,10 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
 
     record = WordQuestionRecord.order(:created_at).last
     assert_equal true, record.is_correct
-    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: @word.id.to_s)
+    assert_redirected_to root_url(direction: "english_to_chinese", result_record_id: record.id)
   end
 
-  test "creates an incorrect record and redirects to root with recalled word id" do
+  test "creates an incorrect record and redirects to root with result record id" do
     wrong_choice = @question.similar_words.first
 
     assert_difference("WordQuestionRecord.count", 1) do
@@ -45,10 +45,10 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
 
     record = WordQuestionRecord.order(:created_at).last
     assert_equal false, record.is_correct
-    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: @word.id.to_s)
+    assert_redirected_to root_url(direction: "english_to_chinese", result_record_id: record.id)
   end
 
-  test "appends recalled word id to existing url state" do
+  test "preserves existing recalled word ids on successful redirect" do
     previous_word = Word.create!(
       word: "previous_#{SecureRandom.hex(4)}",
       english_meaning: "previous",
@@ -63,10 +63,15 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: "#{previous_word.id},#{@word.id}")
+    record = WordQuestionRecord.order(:created_at).last
+    assert_redirected_to root_url(
+      direction: "english_to_chinese",
+      recalled_word_ids: previous_word.id.to_s,
+      result_record_id: record.id
+    )
   end
 
-  test "does not duplicate recalled word id on redirect" do
+  test "preserves recalled word ids without appending answered word id" do
     post word_question_records_url, params: {
       recalled_word_ids: @word.id.to_s,
       word_question_record: {
@@ -75,7 +80,12 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: @word.id.to_s)
+    record = WordQuestionRecord.order(:created_at).last
+    assert_redirected_to root_url(
+      direction: "english_to_chinese",
+      recalled_word_ids: @word.id.to_s,
+      result_record_id: record.id
+    )
   end
 
   test "preserves existing recalled word ids when record creation fails" do
@@ -108,7 +118,8 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: @word.id.to_s)
+    record = WordQuestionRecord.order(:created_at).last
+    assert_redirected_to root_url(direction: "english_to_chinese", result_record_id: record.id)
   end
 
   test "preserves chinese_to_english direction on failure redirect" do

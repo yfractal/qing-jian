@@ -6,14 +6,14 @@ class WordQuestionRecordsController < ApplicationController
     picked_choice = question.choice_for_token(record_params[:picked_choice])
     raise ActiveRecord::RecordNotFound if picked_choice.nil?
 
-    WordQuestionRecord.create!(
+    record = WordQuestionRecord.create!(
       word_question: question,
       picked_choice_token: picked_choice.token,
       picked_choice_word: picked_choice.word,
       is_correct: picked_choice.correct
     )
 
-    redirect_to root_path_with_state(recalled_word_ids + [ question.word_id ]), notice: "Answer saved."
+    redirect_to root_path_with_result(record), notice: "Answer saved."
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound
     redirect_to root_path_with_state(recalled_word_ids), alert: "Could not save answer."
   end
@@ -38,10 +38,17 @@ class WordQuestionRecordsController < ApplicationController
   end
 
   def root_path_with_state(word_ids)
+    root_path(state_params_for(word_ids))
+  end
+
+  def root_path_with_result(record)
+    root_path(state_params_for(recalled_word_ids).merge(result_record_id: record.id))
+  end
+
+  def state_params_for(word_ids)
     state_params = { direction: normalized_direction }
     normalized_word_ids = word_ids.uniq
     state_params[:recalled_word_ids] = normalized_word_ids.join(",") if normalized_word_ids.any?
-
-    root_path(state_params)
+    state_params
   end
 end

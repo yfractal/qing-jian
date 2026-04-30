@@ -131,3 +131,259 @@ input[type="submit"].button {
 .word-detail dd {
   margin-left: 0;
 }
+
+.remember-page {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.remember-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.25rem;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.button-secondary {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.direction-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  padding: 0.35rem;
+  border: 1px solid #dbe3ef;
+  border-radius: 999px;
+  background: #eef4fb;
+}
+
+.direction-tab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 999px;
+  color: #475569;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.direction-tab input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.direction-tab:focus-within {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.direction-tab input:checked + span {
+  color: #0f172a;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.direction-tab-active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.recall-card,
+.completion-card {
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.09);
+}
+
+.question-block {
+  margin-bottom: 1.5rem;
+}
+
+.question-helper {
+  margin: 0 0 0.5rem;
+  color: #64748b;
+  font-weight: 650;
+}
+
+.question-block h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(2.25rem, 8vw, 4rem);
+  line-height: 1.05;
+}
+
+.answer-form {
+  margin: 0;
+}
+
+.choices-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.choice-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 650;
+}
+
+.choice-card-input {
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.choice-card-input:hover,
+.choice-card-input:focus-within {
+  border-color: #60a5fa;
+  background: #eff6ff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.1);
+}
+
+.choice-card-input input {
+  margin: 0;
+  accent-color: #1f6feb;
+}
+
+.choice-card-input input:checked + span {
+  color: #1e3a8a;
+  font-weight: 750;
+}
+
+.choice-card-input:has(input:checked) {
+  border-color: #1f6feb;
+  background: #eff6ff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.12);
+}
+
+.choice-correct {
+  border-color: #16a34a;
+  background: #ecfdf3;
+  color: #14532d;
+}
+
+.choice-selected-wrong {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+.choice-selected {
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.12);
+}
+
+.choice-status {
+  flex: 0 0 auto;
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.feedback-panel {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 18px;
+}
+
+.feedback-panel-correct {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #14532d;
+}
+
+.feedback-panel-incorrect {
+  border: 1px solid #fecaca;
+  background: #fff7ed;
+  color: #7c2d12;
+}
+
+.feedback-label {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.feedback-copy,
+.answer-reveal {
+  margin: 0.25rem 0 0;
+}
+
+.button-large,
+input[type="submit"].button-large {
+  padding: 0.75rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 750;
+}
+
+.completion-card {
+  text-align: center;
+}
+
+.completion-card h2 {
+  margin-top: 0;
+  color: #0f172a;
+  font-size: clamp(2rem, 7vw, 3.25rem);
+}
+
+@media (max-width: 640px) {
+  body {
+    margin-top: 1rem;
+  }
+
+  .remember-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .remember-header .button,
+  .actions .button,
+  .actions input[type="submit"].button {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  .direction-tabs {
+    border-radius: 18px;
+  }
+
+  .direction-tab {
+    border-radius: 14px;
+    font-size: 0.9rem;
+  }
+
+  .recall-card,
+  .completion-card {
+    padding: 1.25rem;
+    border-radius: 20px;
+  }
+}

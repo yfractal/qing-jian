@@ -6,7 +6,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
   test "root renders remember words index" do
     get root_url
     assert_response :success
-    assert_select "h1", "Remember words"
+    assert_select "h1", "Remember Words"
   end
 
   test "shows add new word button" do
@@ -136,13 +136,110 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type='hidden'][name='direction'][value='chinese_to_english']"
   end
 
-  test "shows congratulations message when no words are due" do
+  test "renders correct feedback state for a saved correct answer" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    word = create_due_word!("correct_feedback")
+    question = create_question_for!(word)
+    record = WordQuestionRecord.create!(
+      word_question: question,
+      picked_choice_token: "word:#{word.id}",
+      picked_choice_word: word.word,
+      is_correct: true
+    )
+
+    get root_url(result_record_id: record.id)
+
+    assert_response :success
+    assert_select ".feedback-panel.feedback-panel-correct", text: /Correct/
+    assert_select ".choice-card.choice-correct", text: /#{Regexp.escape(word.chinese_meaning)}/
+    assert_select "a", "Next word"
+  end
+
+  test "renders incorrect feedback state with the correct answer" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    word = create_due_word!("incorrect_feedback")
+    question = create_question_for!(word)
+    wrong_choice = question.similar_words.first
+    record = WordQuestionRecord.create!(
+      word_question: question,
+      picked_choice_token: "similar_word:#{wrong_choice.id}",
+      picked_choice_word: wrong_choice.word,
+      is_correct: false
+    )
+
+    get root_url(result_record_id: record.id)
+
+    assert_response :success
+    assert_select ".feedback-panel.feedback-panel-incorrect", text: /Not quite/
+    assert_select ".answer-reveal", text: /Correct answer: #{word.chinese_meaning}/
+    assert_select ".choice-card.choice-selected-wrong", text: /#{Regexp.escape(wrong_choice.chinese_meaning)}/
+    assert_select ".choice-card.choice-correct", text: /#{Regexp.escape(word.chinese_meaning)}/
+  end
+
+  test "result state preserves chinese_to_english answer display" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    word = create_due_word!("chinese_feedback")
+    question = create_question_for!(word)
+    record = WordQuestionRecord.create!(
+      word_question: question,
+      picked_choice_token: "word:#{word.id}",
+      picked_choice_word: word.word,
+      is_correct: true
+    )
+
+    get root_url(direction: "chinese_to_english", result_record_id: record.id)
+
+    assert_response :success
+    assert_select "h2", word.chinese_meaning
+    assert_select ".choice-card.choice-correct", text: /#{Regexp.escape(word.word)}/
+  end
+
+  test "next word link appends answered word id to recalled word ids" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    previous_word = create_due_word!("previous_recalled")
+    word = create_due_word!("next_link")
+    question = create_question_for!(word)
+    record = WordQuestionRecord.create!(
+      word_question: question,
+      picked_choice_token: "word:#{word.id}",
+      picked_choice_word: word.word,
+      is_correct: true
+    )
+
+    get root_url(recalled_word_ids: previous_word.id.to_s, result_record_id: record.id)
+
+    expected_path = root_path(
+      direction: "english_to_chinese",
+      recalled_word_ids: "#{previous_word.id},#{word.id}"
+    )
+    next_word_link = nil
+    assert_select "a", "Next word" do |elements|
+      next_word_link = elements.first
+    end
+    assert_equal expected_path, next_word_link["href"]
+  end
+
+  test "invalid result record id falls back to normal question state" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    word = create_due_word!("invalid_result")
+    create_question_for!(word)
+
+    get root_url(result_record_id: "999999")
+
+    assert_response :success
+    assert_select "h2", word.word
+    assert_select ".feedback-panel", count: 0
+  end
+
+  test "shows completion card when no words are due" do
     WordRecallState.update_all(due_day: Date.current + 100.days)
 
     get root_url
 
     assert_response :success
-    assert_match "Congratulations! You have recalled all words due today.", @response.body
+    assert_select ".completion-card"
+    assert_match "All caught up", @response.body
+    assert_match "You have recalled all words due today.", @response.body
   end
 
   private
