@@ -6,8 +6,10 @@
       <p class="eyebrow">Daily Review</p>
       <h1>Remember Words</h1>
     </div>
-
-    <%= link_to "Add new word", new_word_path, class: "button button-secondary" %>
+    <div class="remember-header-actions">
+      <%= link_to "Statistics", statistics_words_path, class: "button button-secondary" %>
+      <%= link_to "Add new word", new_word_path, class: "button button-secondary" %>
+    </div>
   </header>
 
   <%= form_with url: root_path, method: :get, local: true, class: "direction-tabs" do %>

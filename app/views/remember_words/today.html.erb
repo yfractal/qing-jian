@@ -7,7 +7,10 @@
       <h1>Today Words</h1>
       <p class="remember-progress-meta">Reviewed <%= @reviewed_count %> / <%= @total_count %> · Pending <%= @pending_count %></p>
     </div>
-    <%= link_to "Back to Review", root_path, class: "button button-secondary" %>
+    <div class="remember-header-actions">
+      <%= link_to "Statistics", statistics_words_path, class: "button button-secondary" %>
+      <%= link_to "Back to Review", root_path, class: "button button-secondary" %>
+    </div>
   </header>
 
   <% if @today_words.any? %>

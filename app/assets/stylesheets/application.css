@@ -145,6 +145,12 @@ input[type="submit"].button {
   margin-bottom: 1.25rem;
 }
 
+.remember-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .eyebrow {
   margin: 0 0 0.25rem;
   color: #64748b;
@@ -471,6 +477,97 @@ input[type="submit"].button-large {
   border: 1px solid #93c5fd;
 }
 
+.statistics-page {
+  max-width: 860px;
+}
+
+.statistics-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.statistics-summary-card {
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  padding: 1rem;
+  background: linear-gradient(180deg, #f8fbff 0%, #fff 100%);
+}
+
+.statistics-value {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.statistics-label {
+  margin: 0.25rem 0 0;
+  color: #475569;
+  font-weight: 620;
+}
+
+.statistics-heatmap {
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  padding: 1rem;
+  background: #fff;
+}
+
+.statistics-heatmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.statistics-legend {
+  margin: 0;
+  color: #475569;
+  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.statistics-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(53, 12px);
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 12px);
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.statistics-heatmap-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #ebedf0;
+}
+
+.statistics-heatmap-level-0 {
+  background: #ebedf0;
+}
+
+.statistics-heatmap-level-1 {
+  background: #c6e48b;
+}
+
+.statistics-heatmap-level-2 {
+  background: #7bc96f;
+}
+
+.statistics-heatmap-level-3 {
+  background: #239a3b;
+}
+
+.statistics-heatmap-level-4 {
+  background: #196127;
+}
+
 @media (max-width: 640px) {
   body {
     margin-top: 1rem;
@@ -511,6 +608,25 @@ input[type="submit"].button-large {
 
   .today-word-status {
     justify-self: start;
+  }
+
+  .remember-header-actions {
+    width: 100%;
+  }
+
+  .remember-header-actions .button {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  .statistics-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .statistics-heatmap-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

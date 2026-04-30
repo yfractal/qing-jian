@@ -29,6 +29,11 @@ class RememberWordsController < ApplicationController
     @pending_count = @total_count - @reviewed_count
   end
 
+  def statistics
+    @stats = RememberWordsStatistics.call(day: Date.current, days: 365)
+    @heatmap_dates = @stats[:daily_review_counts].keys.sort
+  end
+
   private
 
   def normalized_direction

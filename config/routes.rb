@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "remember_words#index"
   get "today_words", to: "remember_words#today", as: :today_words
+  get "words/statistics", to: "remember_words#statistics", as: :statistics_words
 
   resources :words do
     collection do
