@@ -146,7 +146,8 @@ class WordsDueForRecallTest < ActiveSupport::TestCase
   def create_record!(created_on:, correct:)
     WordQuestionRecord.create!(
       word_question: @question,
-      picked_word: correct ? @word : @distractor_words.first,
+      picked_choice_token: correct ? "word:#{@word.id}" : "similar_word:#{@question.similar_words.first.id}",
+      picked_choice_word: correct ? @word.word : @question.similar_words.first.word,
       is_correct: correct,
       created_at: time_on(created_on, hour: 10),
       updated_at: time_on(created_on, hour: 10)
@@ -156,7 +157,11 @@ class WordsDueForRecallTest < ActiveSupport::TestCase
   def create_word_question_for!(word, distractor_words)
     question = WordQuestion.new(word: word)
     distractor_words.each do |similar_word|
-      question.similar_words.build(word: similar_word)
+      question.similar_words.build(
+        word: similar_word.word,
+        english_meaning: similar_word.english_meaning,
+        chinese_meaning: similar_word.chinese_meaning
+      )
     end
     question.save!
     question

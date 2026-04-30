@@ -3,12 +3,14 @@ class WordQuestionRecordsController < ApplicationController
 
   def create
     question = WordQuestion.find(record_params[:word_question_id])
-    picked_word = Word.find(record_params[:picked_word_id])
+    picked_choice = question.choice_for_token(record_params[:picked_choice])
+    raise ActiveRecord::RecordNotFound if picked_choice.nil?
 
     WordQuestionRecord.create!(
       word_question: question,
-      picked_word: picked_word,
-      is_correct: picked_word.id == question.word_id
+      picked_choice_token: picked_choice.token,
+      picked_choice_word: picked_choice.word,
+      is_correct: picked_choice.correct
     )
 
     redirect_to root_path_with_state(recalled_word_ids + [ question.word_id ]), notice: "Answer saved."
@@ -19,7 +21,7 @@ class WordQuestionRecordsController < ApplicationController
   private
 
   def record_params
-    params.require(:word_question_record).permit(:word_question_id, :picked_word_id)
+    params.require(:word_question_record).permit(:word_question_id, :picked_choice)
   end
 
   def recalled_word_ids

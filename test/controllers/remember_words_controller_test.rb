@@ -25,7 +25,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h2", word.word
     assert_select "form"
-    assert_select "input[type='radio'][name='word_question_record[picked_word_id]']"
+    assert_select "input[type='radio'][name='word_question_record[picked_choice]']"
   end
 
   test "defaults to english_to_chinese direction" do
@@ -161,13 +161,11 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     question = WordQuestion.new(word: word)
 
     3.times do |index|
-      choice_word = Word.create!(
+      question.similar_words.build(
         word: "#{word.word}_choice_#{index}_#{SecureRandom.hex(4)}",
         english_meaning: "choice #{index}",
         chinese_meaning: "choice #{index}"
       )
-      choice_word.word_recall_state.update!(due_day: Date.current + 100.days)
-      question.similar_words.build(word: choice_word)
     end
 
     question.save!

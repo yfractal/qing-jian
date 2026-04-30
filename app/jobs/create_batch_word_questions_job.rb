@@ -32,12 +32,14 @@ class CreateBatchWordQuestionsJob < ApplicationJob
       word.reload
       return if word.word_questions.exists?
 
-      similar_word_records = triples.map do |result|
-        FindOrCreateWordQuestion.find_or_create_word_for_similar_result(result)
-      end
-
       question = word.word_questions.build
-      similar_word_records.each { |similar_word_record| question.similar_words.build(word: similar_word_record) }
+      triples.each do |result|
+        question.similar_words.build(
+          word: result.word,
+          english_meaning: result.english_meaning,
+          chinese_meaning: result.chinese_meaning
+        )
+      end
       question.save!
     end
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => e
