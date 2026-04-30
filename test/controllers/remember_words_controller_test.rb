@@ -67,7 +67,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2", word.word
     assert_select ".question-audio-word", word.word
     assert_select ".question-audio-pronunciation", "/test/"
-    assert_select "button[data-pronunciation-play][data-word-text='#{word.word}']", text: "Play"
+    assert_select "button[data-pronunciation-play][data-word-text='#{word.word}'][aria-label='Play sound']"
     assert_select "form"
     assert_select "input[type='radio'][name='word_question_record[picked_choice]']"
   end
@@ -99,7 +99,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2", word.chinese_meaning
     assert_select ".question-audio-word", word.word
     assert_select ".question-audio-pronunciation", "/explicit/"
-    assert_select "button[data-pronunciation-play][data-word-text='#{word.word}']", text: "Play"
+    assert_select "button[data-pronunciation-play][data-word-text='#{word.word}'][aria-label='Play sound']"
   end
 
   test "falls back to english_to_chinese for invalid direction" do

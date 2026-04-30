@@ -65,7 +65,7 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     assert_match "/hello/", @response.body
     assert_select "label", text: "Pronunciation"
     assert_select "input[name='word[pronunciation]'][value='/hello/']"
-    assert_select "button[data-pronunciation-play]", text: "Play"
+    assert_select "button[data-pronunciation-play][aria-label='Play sound']"
   end
 
   test "lookup with blank word shows error" do
