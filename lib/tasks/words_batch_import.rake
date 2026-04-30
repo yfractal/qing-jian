@@ -25,7 +25,8 @@ namespace :words do
       word = Word.new(
         word: item.word,
         english_meaning: item.english_meaning,
-        chinese_meaning: item.chinese_meaning
+        chinese_meaning: item.chinese_meaning,
+        pronunciation: item.pronunciation
       )
 
       if word.save

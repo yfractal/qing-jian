@@ -20,6 +20,21 @@
     <%= f.text_area :english_meaning, rows: 4, required: true %>
   </div>
 
+  <div class="field pronunciation-field">
+    <%= f.label :pronunciation, "Pronunciation" %>
+    <div class="pronunciation-row">
+      <%= f.text_field :pronunciation, autocomplete: "off", placeholder: "/həˈloʊ/" %>
+      <button
+        type="button"
+        class="button button-secondary pronunciation-play"
+        data-pronunciation-play
+        data-pronunciation-input-id="<%= f.object_name %>_pronunciation"
+        data-word-input-id="<%= f.object_name %>_word">
+        Play
+      </button>
+    </div>
+  </div>
+
   <div class="field">
     <%= f.label :chinese_meaning, "Chinese meaning" %>
     <%= f.text_area :chinese_meaning, rows: 4, required: true %>
