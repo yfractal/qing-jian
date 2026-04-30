@@ -315,6 +315,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".today-word-status-pending", text: /Not reviewed/
     assert_match reviewed_word.chinese_meaning, @response.body
     assert_match "/reviewed/", @response.body
+    assert_select "button[data-pronunciation-play][data-word-text='#{reviewed_word.word}'][aria-label='Play sound']"
   end
 
   test "remember progress card links to today words page" do

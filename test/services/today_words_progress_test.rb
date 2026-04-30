@@ -47,6 +47,27 @@ class TodayWordsProgressTest < ActiveSupport::TestCase
     assert_equal false, pending_item[:reviewed]
   end
 
+  test "returns unreviewed words before reviewed words" do
+    reviewed_word = create_word!("reviewed_order")
+    pending_word = create_word!("pending_order")
+    reviewed_word.word_recall_state.update!(due_day: Date.current)
+    pending_word.word_recall_state.update!(due_day: Date.current)
+
+    reviewed_question = create_question_for!(reviewed_word)
+    WordQuestionRecord.create!(
+      word_question: reviewed_question,
+      picked_choice_token: "word:#{reviewed_word.id}",
+      picked_choice_word: reviewed_word.word,
+      is_correct: true,
+      created_at: Time.zone.now
+    )
+
+    result = TodayWordsProgress.call(day: Date.current)
+    statuses = result.map { |item| item[:reviewed] }
+
+    assert_equal [ false, true ], statuses.first(2)
+  end
+
   private
 
   def create_word!(base_english)

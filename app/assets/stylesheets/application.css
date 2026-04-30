@@ -444,6 +444,13 @@ input[type="submit"].button-large {
   font-weight: 760;
 }
 
+.today-word-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
 .today-word-pronunciation,
 .today-word-meaning {
   margin: 0;
@@ -507,6 +514,10 @@ input[type="submit"].button-large {
   .today-word-item {
     grid-template-columns: 1fr;
     gap: 0.4rem;
+  }
+
+  .today-word-title-row .pronunciation-play {
+    width: auto;
   }
 
   .today-word-status {

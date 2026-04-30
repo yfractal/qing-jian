@@ -9,6 +9,11 @@ class TodayWordsProgress
           word: word,
           reviewed: reviewed_word_ids.include?(word.id)
         }
+      end.sort_by do |item|
+        [
+          item[:reviewed] ? 1 : 0,
+          item[:word].word.to_s.downcase
+        ]
       end
     end
 
