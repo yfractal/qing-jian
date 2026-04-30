@@ -1,5 +1,2 @@
 # Solid Queue recurring tasks (see solid_queue README). Scheduler reads this when running `bin/jobs`.
-production:
-  create_missing_word_questions:
-    class: CreateMissingWordQuestionsJob
-    schedule: every 30 minutes
+production: {}

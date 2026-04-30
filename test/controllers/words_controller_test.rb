@@ -34,10 +34,12 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
   setup do
     @old_client = WordsController.meaning_client_class
     WordsController.meaning_client_class = FakeMeaningClient
+    clear_enqueued_jobs
   end
 
   teardown do
     WordsController.meaning_client_class = @old_client
+    clear_enqueued_jobs
   end
 
   test "should get index" do
@@ -88,6 +90,18 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "create enqueues single word question job" do
+    assert_enqueued_with(job: CreateWordQuestionJob) do
+      post words_url, params: {
+        word: {
+          word: "single_enqueue_#{Time.now.to_i}",
+          english_meaning: "A gloss",
+          chinese_meaning: "中文"
+        }
+      }
+    end
+  end
+
   test "batch_lookup returns json meanings" do
     post batch_lookup_words_url, params: { words: ["cat", "dog"] }, as: :json
     assert_response :success
@@ -120,6 +134,20 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, body.fetch("created").size
     assert_equal 1, body.fetch("failed").size
     assert_equal "existing_word", body.fetch("failed")[0].fetch("word")
+  end
+
+  test "batch_create enqueues one batch job and no single-word jobs" do
+    payload = [
+      { word: "batch_enqueue_1", english_meaning: "m1", chinese_meaning: "中1" },
+      { word: "batch_enqueue_2", english_meaning: "m2", chinese_meaning: "中2" }
+    ]
+
+    assert_enqueued_with(job: CreateBatchWordQuestionsJob) do
+      post batch_create_words_url, params: { words: payload }, as: :json
+    end
+
+    single_jobs = enqueued_jobs.count { |job| job[:job] == CreateWordQuestionJob }
+    assert_equal 0, single_jobs
   end
 
   test "batch_create validates empty words array" do

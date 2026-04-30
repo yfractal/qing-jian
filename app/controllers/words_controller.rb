@@ -66,6 +66,7 @@ class WordsController < ApplicationController
   def create
     @word = Word.new(word_params)
     if @word.save
+      CreateWordQuestionJob.perform_later(@word.id)
       redirect_to @word, notice: "Word was successfully created."
     else
       flash.now[:alert] = "Could not save word."
@@ -92,6 +93,7 @@ class WordsController < ApplicationController
 
     created = []
     failed = []
+    created_word_ids = []
 
     words.each do |entry|
       word = Word.new(
@@ -102,11 +104,13 @@ class WordsController < ApplicationController
 
       if word.save
         created << { id: word.id, word: word.word }
+        created_word_ids << word.id
       else
         failed << { word: word.word.presence || (entry[:word] || entry["word"]), errors: word.errors.full_messages.join(", ") }
       end
     end
 
+    CreateBatchWordQuestionsJob.perform_later(created_word_ids) if created_word_ids.any?
     render json: { created: created, failed: failed }, status: :created
   end
 
