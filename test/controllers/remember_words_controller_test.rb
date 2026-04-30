@@ -325,6 +325,31 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a.remember-progress-card", text: /Remembered \d+ \/ \d+/
   end
 
+  test "statistics page renders summary cards and heatmap" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    word = create_due_word!("stats_word")
+    word.word_recall_state.update!(remember_times: 6)
+    question = create_question_for!(word)
+    WordQuestionRecord.create!(
+      word_question: question,
+      picked_choice_token: "word:#{word.id}",
+      picked_choice_word: word.word,
+      is_correct: true,
+      created_at: Time.zone.now
+    )
+
+    get statistics_words_url
+
+    assert_response :success
+    assert_select "h1", "Statistics"
+    assert_select ".statistics-summary-card", minimum: 4
+    assert_select ".statistics-heatmap"
+    assert_select ".statistics-label", text: /remember_times >= 6/
+    assert_select ".statistics-label", text: /Correct reviews in last 7 days/
+    assert_select ".statistics-label", text: /Active review days in last 30 days/
+    assert_select ".statistics-heatmap-cell", minimum: 365
+  end
+
   private
 
   def create_due_word!(name)
