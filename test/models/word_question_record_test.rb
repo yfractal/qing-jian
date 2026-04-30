@@ -5,25 +5,40 @@ class WordQuestionRecordTest < ActiveSupport::TestCase
     @question = word_questions(:cat_question)
   end
 
-  test "valid with a question and a picked word" do
+  test "valid with a question and picked choice fields" do
     record = WordQuestionRecord.new(
       word_question: @question,
-      picked_word: words(:cat),
+      picked_choice_token: "word:#{@question.word.id}",
+      picked_choice_word: @question.word.word,
       is_correct: true
     )
     assert record.valid?
   end
 
   test "invalid without word_question" do
-    record = WordQuestionRecord.new(picked_word: words(:cat), is_correct: false)
+    record = WordQuestionRecord.new(
+      picked_choice_token: "word:#{words(:cat).id}",
+      picked_choice_word: words(:cat).word,
+      is_correct: false
+    )
     assert_not record.valid?
     assert_includes record.errors[:word_question], "must exist"
   end
 
-  test "invalid without picked_word" do
+  test "invalid without picked_choice_token" do
     record = WordQuestionRecord.new(word_question: @question, is_correct: false)
     assert_not record.valid?
-    assert_includes record.errors[:picked_word], "must exist"
+    assert_includes record.errors[:picked_choice_token], "can't be blank"
+  end
+
+  test "invalid without picked_choice_word" do
+    record = WordQuestionRecord.new(
+      word_question: @question,
+      picked_choice_token: "word:#{words(:cat).id}",
+      is_correct: false
+    )
+    assert_not record.valid?
+    assert_includes record.errors[:picked_choice_word], "can't be blank"
   end
 
   test "is_correct defaults to false" do
@@ -50,7 +65,8 @@ class WordQuestionRecordTest < ActiveSupport::TestCase
 
     WordQuestionRecord.create!(
       word_question: @question,
-      picked_word: @question.word,
+      picked_choice_token: "word:#{@question.word.id}",
+      picked_choice_word: @question.word.word,
       is_correct: true,
       created_at: Time.zone.local(2026, 4, 1, 10),
       updated_at: Time.zone.local(2026, 4, 1, 10)
@@ -70,7 +86,8 @@ class WordQuestionRecordTest < ActiveSupport::TestCase
 
     WordQuestionRecord.create!(
       word_question: @question,
-      picked_word: words(:dog),
+      picked_choice_token: "similar_word:#{similar_words(:dog_choice_for_cat_question).id}",
+      picked_choice_word: similar_words(:dog_choice_for_cat_question).word,
       is_correct: false,
       created_at: Time.zone.local(2026, 4, 1, 10),
       updated_at: Time.zone.local(2026, 4, 1, 10)

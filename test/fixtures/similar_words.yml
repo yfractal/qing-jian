@@ -1,15 +1,17 @@
-dog_similar_to_cat:
-  similar_wordable: cat (Word)
-  word: dog
-
 dog_choice_for_cat_question:
-  similar_wordable: cat_question (WordQuestion)
+  word_question: cat_question
   word: dog
+  chinese_meaning: 狗
+  english_meaning: A domesticated carnivorous mammal.
 
 fish_choice_for_cat_question:
-  similar_wordable: cat_question (WordQuestion)
+  word_question: cat_question
   word: fish
+  chinese_meaning: 鱼
+  english_meaning: A limbless cold-blooded vertebrate animal.
 
-dog_second_choice_for_cat_question:
-  similar_wordable: cat_question (WordQuestion)
-  word: dog
+bird_choice_for_cat_question:
+  word_question: cat_question
+  word: bird
+  chinese_meaning: 鸟
+  english_meaning: A warm-blooded egg-laying vertebrate animal.

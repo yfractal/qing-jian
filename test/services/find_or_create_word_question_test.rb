@@ -42,7 +42,7 @@ class FindOrCreateWordQuestionTest < ActiveSupport::TestCase
     assert_equal 3, @result.similar_words.size
   end
 
-  test "reuses existing similar words and only creates missing words" do
+  test "stores similar words on the question without creating Word records" do
     word = Word.create!(word: "pony", english_meaning: "A small horse.", chinese_meaning: "小马")
     triples = [
       [ "dog", "A domesticated carnivorous mammal.", "狗" ],
@@ -51,14 +51,12 @@ class FindOrCreateWordQuestionTest < ActiveSupport::TestCase
     ]
     service = build_service(triples)
 
-    assert_difference "Word.count", 2 do
+    assert_no_difference "Word.count" do
       @result = service.call(word: word)
     end
 
-    words_in_question = @result.similar_words.includes(:word).map { |similar_word| similar_word.word.word }
-    assert_includes words_in_question, "dog"
-    assert_includes words_in_question, "mule"
-    assert_includes words_in_question, "foal"
+    words_in_question = @result.similar_words.map(&:word)
+    assert_equal [ "dog", "mule", "foal" ], words_in_question
   end
 
   test "does not create duplicate questions on repeated calls" do

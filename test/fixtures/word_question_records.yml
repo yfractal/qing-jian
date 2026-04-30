@@ -1,4 +1,5 @@
 correct_answer:
   word_question: cat_question
-  picked_word: cat
+  picked_choice_token: word:<%= ActiveRecord::FixtureSet.identify(:cat) %>
+  picked_choice_word: cat
   is_correct: true

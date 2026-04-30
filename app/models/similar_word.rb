@@ -1,7 +1,7 @@
 class SimilarWord < ApplicationRecord
-  belongs_to :similar_wordable, polymorphic: true
-  belongs_to :word
+  belongs_to :word_question
 
-  validates :similar_wordable, presence: true
   validates :word, presence: true
+  validates :english_meaning, presence: true
+  validates :chinese_meaning, presence: true
 end

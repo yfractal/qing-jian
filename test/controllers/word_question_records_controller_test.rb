@@ -10,9 +10,9 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       chinese_meaning: "测试"
     )
     @question = WordQuestion.new(word: @word)
-    @question.similar_words.build(word: Word.create!(word: "similar_1_#{SecureRandom.hex(4)}", english_meaning: "s1", chinese_meaning: "s1"))
-    @question.similar_words.build(word: Word.create!(word: "similar_2_#{SecureRandom.hex(4)}", english_meaning: "s2", chinese_meaning: "s2"))
-    @question.similar_words.build(word: Word.create!(word: "similar_3_#{SecureRandom.hex(4)}", english_meaning: "s3", chinese_meaning: "s3"))
+    @question.similar_words.build(word: "similar_1_#{SecureRandom.hex(4)}", english_meaning: "s1", chinese_meaning: "s1")
+    @question.similar_words.build(word: "similar_2_#{SecureRandom.hex(4)}", english_meaning: "s2", chinese_meaning: "s2")
+    @question.similar_words.build(word: "similar_3_#{SecureRandom.hex(4)}", english_meaning: "s3", chinese_meaning: "s3")
     @question.save!
   end
 
@@ -21,7 +21,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       post word_question_records_url, params: {
         word_question_record: {
           word_question_id: @question.id,
-          picked_word_id: @word.id
+          picked_choice: "word:#{@word.id}"
         }
       }
     end
@@ -32,13 +32,13 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "creates an incorrect record and redirects to root with recalled word id" do
-    wrong_word = @question.similar_words.first.word
+    wrong_choice = @question.similar_words.first
 
     assert_difference("WordQuestionRecord.count", 1) do
       post word_question_records_url, params: {
         word_question_record: {
           word_question_id: @question.id,
-          picked_word_id: wrong_word.id
+          picked_choice: "similar_word:#{wrong_choice.id}"
         }
       }
     end
@@ -59,7 +59,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       recalled_word_ids: previous_word.id.to_s,
       word_question_record: {
         word_question_id: @question.id,
-        picked_word_id: @word.id
+        picked_choice: "word:#{@word.id}"
       }
     }
 
@@ -71,7 +71,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       recalled_word_ids: @word.id.to_s,
       word_question_record: {
         word_question_id: @question.id,
-        picked_word_id: @word.id
+        picked_choice: "word:#{@word.id}"
       }
     }
 
@@ -90,7 +90,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
         recalled_word_ids: previous_word.id.to_s,
         word_question_record: {
           word_question_id: "missing",
-          picked_word_id: @word.id
+          picked_choice: "word:#{@word.id}"
         }
       }
     end
@@ -104,7 +104,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       direction: "english_to_chinese",
       word_question_record: {
         word_question_id: @question.id,
-        picked_word_id: @word.id
+        picked_choice: "word:#{@word.id}"
       }
     }
 
@@ -116,7 +116,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       direction: "chinese_to_english",
       word_question_record: {
         word_question_id: "missing",
-        picked_word_id: @word.id
+        picked_choice: "word:#{@word.id}"
       }
     }
 

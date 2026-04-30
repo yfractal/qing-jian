@@ -32,7 +32,7 @@
 
       <% @question.choices.shuffle.each do |choice| %>
         <label>
-          <%= radio_button_tag "word_question_record[picked_word_id]", choice.id, false, required: true %>
+          <%= radio_button_tag "word_question_record[picked_choice]", choice.token, false, required: true %>
           <%= english_to_chinese ? choice.chinese_meaning : choice.word %>
         </label><br>
       <% end %>
