@@ -10,18 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_30_104600) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_30_122940) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
-
-  create_table "words", force: :cascade do |t|
-    t.string "chinese_meaning"
-    t.datetime "created_at", null: false
-    t.string "english_meaning"
-    t.datetime "updated_at", null: false
-    t.string "word", null: false
-    t.index "lower((word)::text)", name: "index_words_on_lower_word", unique: true
-  end  
 
   create_table "similar_words", force: :cascade do |t|
     t.string "chinese_meaning", null: false
@@ -64,6 +55,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_30_104600) do
     t.string "chinese_meaning"
     t.datetime "created_at", null: false
     t.string "english_meaning"
+    t.string "pronunciation"
     t.datetime "updated_at", null: false
     t.string "word", null: false
     t.index "lower((word)::text)", name: "index_words_on_lower_word", unique: true

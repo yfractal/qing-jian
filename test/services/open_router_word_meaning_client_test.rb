@@ -22,7 +22,7 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
   end
 
   test "lookup returns MeaningResult on success" do
-    inner = { "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫" }
+    inner = { "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫", "pronunciation" => "/kæt/" }
     outer = {
       "choices" => [
         { "message" => { "content" => JSON.generate(inner) } }
@@ -35,6 +35,7 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
     assert_instance_of Llm::OpenRouterWordMeaningClient::MeaningResult, result
     assert_equal "A small carnivorous mammal.", result.english_meaning
     assert_equal "猫", result.chinese_meaning
+    assert_equal "/kæt/", result.pronunciation
   end
 
   test "lookup raises on non success status" do
@@ -69,13 +70,22 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
     client = Llm::OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
 
     error = assert_raises(Llm::OpenRouterWordMeaningClient::Error) { client.lookup("cat") }
-    assert_match(/missing english_meaning or chinese_meaning/, error.message)
+    assert_match(/missing english_meaning or chinese_meaning or pronunciation/, error.message)
+  end
+
+  test "lookup raises when pronunciation missing" do
+    outer = { "choices" => [ { "message" => { "content" => '{"english_meaning":"x","chinese_meaning":"y"}' } } ] }
+    response = OpenStruct.new(code: "200", body: JSON.generate(outer))
+    client = Llm::OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
+
+    error = assert_raises(Llm::OpenRouterWordMeaningClient::Error) { client.lookup("cat") }
+    assert_match(/missing english_meaning or chinese_meaning or pronunciation/, error.message)
   end
 
   test "default model is deepseek v4 pro when env model unset" do
     captured = nil
     response = OpenStruct.new(code: "200", body: JSON.generate(
-      "choices" => [ { "message" => { "content" => '{"english_meaning":"a","chinese_meaning":"b"}' } } ]
+      "choices" => [ { "message" => { "content" => '{"english_meaning":"a","chinese_meaning":"b","pronunciation":"x"}' } } ]
     ))
     old_model = ENV.fetch("OPENROUTER_MODEL", nil)
     ENV.delete("OPENROUTER_MODEL")
@@ -101,8 +111,8 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
 
   test "batch_lookup returns BatchMeaningResult list on success" do
     inner = [
-      { "word" => "cat", "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫" },
-      { "word" => "dog", "english_meaning" => "A domesticated carnivorous mammal.", "chinese_meaning" => "狗" }
+      { "word" => "cat", "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫", "pronunciation" => "/kæt/" },
+      { "word" => "dog", "english_meaning" => "A domesticated carnivorous mammal.", "chinese_meaning" => "狗", "pronunciation" => "/dɔɡ/" }
     ]
     outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
@@ -113,12 +123,13 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
     assert_instance_of Llm::OpenRouterWordMeaningClient::BatchMeaningResult, results.first
     assert_equal "cat", results[0].word
     assert_equal "狗", results[1].chinese_meaning
+    assert_equal "/dɔɡ/", results[1].pronunciation
   end
 
   test "batch_lookup strips blanks and deduplicates words before request" do
     captured = nil
     inner = [
-      { "word" => "cat", "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫" }
+      { "word" => "cat", "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫", "pronunciation" => "/kæt/" }
     ]
     outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
@@ -163,7 +174,7 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
     log_output = StringIO.new
     logger = Logger.new(log_output)
     response = OpenStruct.new(code: "200", body: JSON.generate(
-      "choices" => [ { "message" => { "content" => '{"english_meaning":"a","chinese_meaning":"b"}' } } ]
+      "choices" => [ { "message" => { "content" => '{"english_meaning":"a","chinese_meaning":"b","pronunciation":"x"}' } } ]
     ))
 
     old_logger = Rails.logger

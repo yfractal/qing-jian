@@ -15,12 +15,14 @@ class WordsBatchImportTaskTest < ActiveSupport::TestCase
       Llm::OpenRouterWordMeaningClient::BatchMeaningResult.new(
         word: "yak",
         english_meaning: "A long-haired wild ox",
-        chinese_meaning: "牦牛"
+        chinese_meaning: "牦牛",
+        pronunciation: "/jæk/"
       ),
       Llm::OpenRouterWordMeaningClient::BatchMeaningResult.new(
         word: "ibex",
         english_meaning: "A wild mountain goat",
-        chinese_meaning: "北山羊"
+        chinese_meaning: "北山羊",
+        pronunciation: "/ˈaɪbɛks/"
       )
     ]
     fake_client = Class.new do
@@ -54,8 +56,8 @@ class WordsBatchImportTaskTest < ActiveSupport::TestCase
     File.write(file_path, "apple\nbanana\napple\n")
 
     mock_results = [
-      Llm::OpenRouterWordMeaningClient::BatchMeaningResult.new(word: "apple", english_meaning: "A fruit", chinese_meaning: "苹果"),
-      Llm::OpenRouterWordMeaningClient::BatchMeaningResult.new(word: "banana", english_meaning: "Another fruit", chinese_meaning: "香蕉")
+      Llm::OpenRouterWordMeaningClient::BatchMeaningResult.new(word: "apple", english_meaning: "A fruit", chinese_meaning: "苹果", pronunciation: "/ˈæpəl/"),
+      Llm::OpenRouterWordMeaningClient::BatchMeaningResult.new(word: "banana", english_meaning: "Another fruit", chinese_meaning: "香蕉", pronunciation: "/bəˈnænə/")
     ]
     fake_client = Class.new do
       attr_reader :received_words

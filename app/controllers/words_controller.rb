@@ -28,7 +28,8 @@ class WordsController < ApplicationController
     @word = Word.new(
       word: trimmed,
       english_meaning: result.english_meaning,
-      chinese_meaning: result.chinese_meaning
+      chinese_meaning: result.chinese_meaning,
+      pronunciation: result.pronunciation
     )
     render :new
   rescue Llm::OpenRouterWordMeaningClient::Error => e
@@ -55,7 +56,8 @@ class WordsController < ApplicationController
         {
           word: result.word,
           english_meaning: result.english_meaning,
-          chinese_meaning: result.chinese_meaning
+          chinese_meaning: result.chinese_meaning,
+          pronunciation: result.pronunciation
         }
       end
     }
@@ -99,6 +101,7 @@ class WordsController < ApplicationController
         word: entry[:word] || entry["word"],
         english_meaning: entry[:english_meaning] || entry["english_meaning"],
         chinese_meaning: entry[:chinese_meaning] || entry["chinese_meaning"],
+        pronunciation: entry[:pronunciation] || entry["pronunciation"],
         skip_create_word_question_job: true
       )
 
@@ -137,7 +140,7 @@ class WordsController < ApplicationController
   end
 
   def word_params
-    params.require(:word).permit(:word, :english_meaning, :chinese_meaning)
+    params.require(:word).permit(:word, :english_meaning, :chinese_meaning, :pronunciation)
   end
 
   def meaning_client

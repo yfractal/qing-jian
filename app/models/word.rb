@@ -7,6 +7,7 @@ class Word < ApplicationRecord
   validates :word, presence: true, uniqueness: { case_sensitive: false }
   validates :chinese_meaning, presence: true
   validates :english_meaning, presence: true
+  validates :pronunciation, length: { maximum: 255 }, allow_blank: true
 
   after_create :create_initial_recall_state
   after_create_commit :enqueue_create_word_question_job, unless: :skip_create_word_question_job

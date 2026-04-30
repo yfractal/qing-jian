@@ -423,3 +423,18 @@ input[type="submit"].button-large {
     border-radius: 20px;
   }
 }
+
+.pronunciation-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pronunciation-row input[type="text"] {
+  flex: 1 1 auto;
+}
+
+.pronunciation-play {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}

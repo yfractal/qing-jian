@@ -31,3 +31,22 @@
 <% end %>
 
 <p><%= link_to "Back to words", words_path %></p>
+
+<script>
+  document.addEventListener("click", function(event) {
+    const button = event.target.closest("[data-pronunciation-play]");
+    if (!button) return;
+
+    const pronunciationInput = document.getElementById(button.dataset.pronunciationInputId);
+    const wordInput = document.getElementById(button.dataset.wordInputId);
+    const text = (pronunciationInput && pronunciationInput.value.trim()) || (wordInput && wordInput.value.trim());
+    if (!text) return;
+
+    if (window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+  });
+</script>
