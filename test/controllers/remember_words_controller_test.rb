@@ -58,12 +58,16 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
   test "renders question form when question is available" do
     WordRecallState.update_all(due_day: Date.current + 100.days)
     word = create_due_word!("test")
+    word.update!(pronunciation: "/test/")
     create_question_for!(word)
 
     get root_url
 
     assert_response :success
     assert_select "h2", word.word
+    assert_select ".question-audio-word", word.word
+    assert_select ".question-audio-pronunciation", "/test/"
+    assert_select "button[data-pronunciation-play][data-word-text='#{word.word}']", text: "Play"
     assert_select "form"
     assert_select "input[type='radio'][name='word_question_record[picked_choice]']"
   end
@@ -84,6 +88,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
   test "supports chinese_to_english direction from params" do
     WordRecallState.update_all(due_day: Date.current + 100.days)
     word = create_due_word!("explicit_direction")
+    word.update!(pronunciation: "/explicit/")
     create_question_for!(word)
 
     get root_url(direction: "chinese_to_english")
@@ -92,6 +97,9 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type='radio'][name='direction'][value='chinese_to_english'][checked='checked']"
     assert_select "p", "Choose the correct English word."
     assert_select "h2", word.chinese_meaning
+    assert_select ".question-audio-word", word.word
+    assert_select ".question-audio-pronunciation", "/explicit/"
+    assert_select "button[data-pronunciation-play][data-word-text='#{word.word}']", text: "Play"
   end
 
   test "falls back to english_to_chinese for invalid direction" do

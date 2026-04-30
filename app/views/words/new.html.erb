@@ -37,9 +37,8 @@
     const button = event.target.closest("[data-pronunciation-play]");
     if (!button) return;
 
-    const pronunciationInput = document.getElementById(button.dataset.pronunciationInputId);
     const wordInput = document.getElementById(button.dataset.wordInputId);
-    const text = (pronunciationInput && pronunciationInput.value.trim()) || (wordInput && wordInput.value.trim());
+    const text = (button.dataset.wordText || "").trim() || (wordInput && wordInput.value.trim());
     if (!text) return;
 
     if (window.speechSynthesis) {

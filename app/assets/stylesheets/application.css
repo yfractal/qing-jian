@@ -270,6 +270,24 @@ input[type="submit"].button {
   line-height: 1.05;
 }
 
+.question-audio-row {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.question-audio-word {
+  color: #334155;
+  font-weight: 700;
+}
+
+.question-audio-pronunciation {
+  color: #64748b;
+  font-weight: 600;
+}
+
 .answer-form {
   margin: 0;
 }
