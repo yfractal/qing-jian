@@ -14,6 +14,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
+  create_table "words", force: :cascade do |t|
+    t.string "chinese_meaning"
+    t.datetime "created_at", null: false
+    t.string "english_meaning"
+    t.datetime "updated_at", null: false
+    t.string "word", null: false
+    t.index "lower((word)::text)", name: "index_words_on_lower_word", unique: true
+  end  
+
   create_table "similar_words", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "similar_wordable_id", null: false
@@ -49,15 +58,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_130000) do
     t.bigint "word_id", null: false
     t.index ["due_day"], name: "index_word_recall_states_on_due_day"
     t.index ["word_id"], name: "index_word_recall_states_on_word_id", unique: true
-  end
-
-  create_table "words", force: :cascade do |t|
-    t.string "chinese_meaning"
-    t.datetime "created_at", null: false
-    t.string "english_meaning"
-    t.datetime "updated_at", null: false
-    t.string "word", null: false
-    t.index "lower((word)::text)", name: "index_words_on_lower_word", unique: true
   end
 
   add_foreign_key "similar_words", "words"
