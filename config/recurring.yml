@@ -1,0 +1,2 @@
+# Solid Queue recurring tasks (see solid_queue README). Scheduler reads this when running `bin/jobs`.
+production: {}
