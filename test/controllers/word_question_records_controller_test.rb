@@ -28,7 +28,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
 
     record = WordQuestionRecord.order(:created_at).last
     assert_equal true, record.is_correct
-    assert_redirected_to root_url(recalled_word_ids: @word.id.to_s)
+    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: @word.id.to_s)
   end
 
   test "creates an incorrect record and redirects to root with recalled word id" do
@@ -45,7 +45,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
 
     record = WordQuestionRecord.order(:created_at).last
     assert_equal false, record.is_correct
-    assert_redirected_to root_url(recalled_word_ids: @word.id.to_s)
+    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: @word.id.to_s)
   end
 
   test "appends recalled word id to existing url state" do
@@ -63,7 +63,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to root_url(recalled_word_ids: "#{previous_word.id},#{@word.id}")
+    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: "#{previous_word.id},#{@word.id}")
   end
 
   test "does not duplicate recalled word id on redirect" do
@@ -75,7 +75,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to root_url(recalled_word_ids: @word.id.to_s)
+    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: @word.id.to_s)
   end
 
   test "preserves existing recalled word ids when record creation fails" do
@@ -95,7 +95,32 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to root_url(recalled_word_ids: previous_word.id.to_s)
+    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: previous_word.id.to_s)
+    assert_equal "Could not save answer.", flash[:alert]
+  end
+
+  test "preserves english_to_chinese direction on successful redirect" do
+    post word_question_records_url, params: {
+      direction: "english_to_chinese",
+      word_question_record: {
+        word_question_id: @question.id,
+        picked_word_id: @word.id
+      }
+    }
+
+    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: @word.id.to_s)
+  end
+
+  test "preserves chinese_to_english direction on failure redirect" do
+    post word_question_records_url, params: {
+      direction: "chinese_to_english",
+      word_question_record: {
+        word_question_id: "missing",
+        picked_word_id: @word.id
+      }
+    }
+
+    assert_redirected_to root_url(direction: "chinese_to_english")
     assert_equal "Could not save answer.", flash[:alert]
   end
 end

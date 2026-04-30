@@ -23,9 +23,47 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     get root_url
 
     assert_response :success
-    assert_select "h2", word.chinese_meaning
+    assert_select "h2", word.word
     assert_select "form"
     assert_select "input[type='radio'][name='word_question_record[picked_word_id]']"
+  end
+
+  test "defaults to english_to_chinese direction" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    word = create_due_word!("default_direction")
+    create_question_for!(word)
+
+    get root_url
+
+    assert_response :success
+    assert_select "input[type='radio'][name='direction'][value='english_to_chinese'][checked='checked']"
+    assert_select "p", "Choose the correct Chinese meaning."
+    assert_select "h2", word.word
+  end
+
+  test "supports chinese_to_english direction from params" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    word = create_due_word!("explicit_direction")
+    create_question_for!(word)
+
+    get root_url(direction: "chinese_to_english")
+
+    assert_response :success
+    assert_select "input[type='radio'][name='direction'][value='chinese_to_english'][checked='checked']"
+    assert_select "p", "Choose the correct English word."
+    assert_select "h2", word.chinese_meaning
+  end
+
+  test "falls back to english_to_chinese for invalid direction" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    word = create_due_word!("invalid_direction")
+    create_question_for!(word)
+
+    get root_url(direction: "invalid")
+
+    assert_response :success
+    assert_select "input[type='radio'][name='direction'][value='english_to_chinese'][checked='checked']"
+    assert_select "h2", word.word
   end
 
   test "filters recalled word ids from the current pass" do
@@ -38,8 +76,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     get root_url(recalled_word_ids: first_word.id.to_s)
 
     assert_response :success
-    assert_no_match first_word.chinese_meaning, @response.body
-    assert_match second_word.chinese_meaning, @response.body
+    assert_select "h2", second_word.word
   end
 
   test "clears recalled word state when filtered pass is exhausted but words are still due" do
@@ -49,8 +86,18 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
 
     get root_url(recalled_word_ids: word.id.to_s)
 
-    assert_redirected_to root_url
+    assert_redirected_to root_url(direction: "english_to_chinese")
     assert_equal "Starting another recall pass for words still due.", flash[:notice]
+  end
+
+  test "preserves chinese_to_english direction when clearing filtered pass state" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    word = create_due_word!("retry_chinese_to_english")
+    create_question_for!(word)
+
+    get root_url(recalled_word_ids: word.id.to_s, direction: "chinese_to_english")
+
+    assert_redirected_to root_url(direction: "chinese_to_english")
   end
 
   test "clears stale recalled word state when no words are due" do
@@ -61,7 +108,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
 
     get root_url(recalled_word_ids: word.id.to_s)
 
-    assert_redirected_to root_url
+    assert_redirected_to root_url(direction: "english_to_chinese")
     assert_equal "All words recalled for today.", flash[:notice]
   end
 
@@ -76,6 +123,17 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "input[type='hidden'][name='recalled_word_ids'][value='#{first_word.id}']"
+  end
+
+  test "includes current direction in answer form submission" do
+    WordRecallState.update_all(due_day: Date.current + 100.days)
+    word = create_due_word!("carry_direction")
+    create_question_for!(word)
+
+    get root_url(direction: "chinese_to_english")
+
+    assert_response :success
+    assert_select "input[type='hidden'][name='direction'][value='chinese_to_english']"
   end
 
   test "shows congratulations message when no words are due" do
