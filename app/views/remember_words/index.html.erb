@@ -6,19 +6,34 @@
   <%= link_to "Add new word", new_word_path, class: "button button-primary" %>
 </p>
 
+<%= form_with url: root_path, method: :get, local: true, class: "direction-form" do %>
+  <label>
+    <%= radio_button_tag :direction, "english_to_chinese", @direction == "english_to_chinese", onchange: "this.form.submit()" %>
+    English to Chinese
+  </label>
+  <label>
+    <%= radio_button_tag :direction, "chinese_to_english", @direction == "chinese_to_english", onchange: "this.form.submit()" %>
+    Chinese to English
+  </label>
+<% end %>
+
 <% if @question.present? %>
+  <% english_to_chinese = @direction == "english_to_chinese" %>
+  <% prompt_text = english_to_chinese ? "Choose the correct Chinese meaning." : "Choose the correct English word." %>
+  <% question_text = english_to_chinese ? @question.word.word : @question.word.chinese_meaning %>
   <section class="recall-card">
-    <h2><%= @question.word.chinese_meaning %></h2>
-    <p>Choose the correct English word.</p>
+    <h2><%= question_text %></h2>
+    <p><%= prompt_text %></p>
 
     <%= form_with model: @word_question_record, url: word_question_records_path do |form| %>
+      <%= hidden_field_tag :direction, @direction %>
       <%= hidden_field_tag :recalled_word_ids, @recalled_word_ids.join(",") if @recalled_word_ids.present? %>
       <%= form.hidden_field :word_question_id, value: @question.id %>
 
       <% @question.choices.shuffle.each do |choice| %>
         <label>
           <%= radio_button_tag "word_question_record[picked_word_id]", choice.id, false, required: true %>
-          <%= choice.word %>
+          <%= english_to_chinese ? choice.chinese_meaning : choice.word %>
         </label><br>
       <% end %>
 

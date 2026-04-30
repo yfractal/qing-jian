@@ -1,4 +1,6 @@
 class WordQuestionRecordsController < ApplicationController
+  DIRECTIONS = %w[english_to_chinese chinese_to_english].freeze
+
   def create
     question = WordQuestion.find(record_params[:word_question_id])
     picked_word = Word.find(record_params[:picked_word_id])
@@ -9,9 +11,9 @@ class WordQuestionRecordsController < ApplicationController
       is_correct: picked_word.id == question.word_id
     )
 
-    redirect_to root_path_with_recalled_ids(recalled_word_ids + [ question.word_id ]), notice: "Answer saved."
+    redirect_to root_path_with_state(recalled_word_ids + [ question.word_id ]), notice: "Answer saved."
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound
-    redirect_to root_path_with_recalled_ids(recalled_word_ids), alert: "Could not save answer."
+    redirect_to root_path_with_state(recalled_word_ids), alert: "Could not save answer."
   end
 
   private
@@ -27,10 +29,17 @@ class WordQuestionRecordsController < ApplicationController
     end.uniq
   end
 
-  def root_path_with_recalled_ids(word_ids)
-    normalized_word_ids = word_ids.uniq
-    return root_path if normalized_word_ids.empty?
+  def normalized_direction
+    return params[:direction] if DIRECTIONS.include?(params[:direction])
 
-    root_path(recalled_word_ids: normalized_word_ids.join(","))
+    "english_to_chinese"
+  end
+
+  def root_path_with_state(word_ids)
+    state_params = { direction: normalized_direction }
+    normalized_word_ids = word_ids.uniq
+    state_params[:recalled_word_ids] = normalized_word_ids.join(",") if normalized_word_ids.any?
+
+    root_path(state_params)
   end
 end
