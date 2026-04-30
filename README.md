@@ -25,3 +25,12 @@ The OpenRouter clients (`Llm::OpenRouterWordMeaningClient` and `Llm::OpenRouterS
    - `bin/rails test`
 3. Run a single test file:
    - `bin/rails test test/services/words_due_for_recall_test.rb`
+
+## scripts
+
+- Batch import words with meanings:
+  - `bin/rails 'words:batch_import[cat,dog]'`
+  - `bin/rails 'words:batch_import[file:tmp/words.txt]'`
+- Backfill questions for words missing questions:
+  - `bin/rails 'words:backfill_questions'`
+  - optional batch size: `bin/rails 'words:backfill_questions[50]'`
