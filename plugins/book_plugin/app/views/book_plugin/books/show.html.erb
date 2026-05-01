@@ -16,7 +16,7 @@
     <p><%= simple_format(@book.description.to_s) %></p>
     <% if @book.file.attached? %>
       <p>
-        <%= link_to "Download PDF", rails_blob_path(@book.file, disposition: "attachment"), class: "button button-secondary" %>
+        <%= link_to "Download PDF", main_app.rails_blob_path(@book.file, disposition: "attachment"), class: "button button-secondary" %>
       </p>
     <% end %>
     <div class="actions">
