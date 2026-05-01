@@ -573,38 +573,6 @@ input[type="submit"].button-large {
   z-index: 2;
 }
 
-/* Tooltip below the cell so it stays away from the header row and inside padded scroll area. */
-.statistics-heatmap-grid .statistics-heatmap-cell:hover::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 8px);
-  transform: translateX(-50%);
-  z-index: 20;
-  padding: 6px 8px;
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.95);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 650;
-  white-space: nowrap;
-  pointer-events: none;
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.22);
-}
-
-.statistics-heatmap-grid .statistics-heatmap-cell:hover::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 2px);
-  transform: translateX(-50%);
-  z-index: 21;
-  border: 6px solid transparent;
-  border-bottom-color: rgba(15, 23, 42, 0.95);
-  border-top-width: 0;
-  pointer-events: none;
-}
-
 .statistics-heatmap-level-0 {
   background: #ebedf0;
 }
