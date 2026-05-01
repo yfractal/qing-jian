@@ -20,7 +20,10 @@ class BuildSelectionJsHighlightTests(unittest.TestCase):
         self.assertIn("const pickedTextItems = [];", js)
         self.assertIn("let currentPickedTextItem = [];", js)
         self.assertIn("function startNewPickedTextItem()", js)
-        self.assertIn('console.log("Picked text items:", buildPickedTextItemsForLog());', js)
+        self.assertIn('console.log("Picked text items:", items);', js)
+        self.assertIn('type: "picked-text-items-updated",', js)
+        self.assertIn("items: items", js)
+        self.assertIn("window.parent.postMessage(", js)
         self.assertIn("id: nextPickedTextId++,", js)
         self.assertIn("text: text", js)
 

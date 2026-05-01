@@ -44,7 +44,17 @@ def build_selection_js(scale, initial_area=None):
     }}
 
     function logPickedTextItems() {{
-        console.log("Picked text items:", buildPickedTextItemsForLog());
+        const items = buildPickedTextItemsForLog();
+        console.log("Picked text items:", items);
+        if (window.parent && window.parent !== window) {{
+            window.parent.postMessage(
+                {{
+                    type: "picked-text-items-updated",
+                    items: items
+                }},
+                "*"
+            );
+        }}
     }}
 
     function startNewPickedTextItem() {{
