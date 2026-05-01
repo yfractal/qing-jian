@@ -1,6 +1,7 @@
 import fitz
 import html
 import os
+import uuid
 
 
 def fmt_num(value):
@@ -273,8 +274,11 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
         x0, y0, x1, y1 = el["bbox"]
 
         if el["type"] == "text":
+            element_id = f"el-{uuid.uuid4().hex}"
             html_parts.append(f"""
             <div class="text"
+                id="{element_id}"
+                category="text"
                 style="
                     left:{s(x0)}px;
                     top:{s(y0)}px;
@@ -285,9 +289,12 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
             """)
 
         elif el["type"] == "image":
+            element_id = f"el-{uuid.uuid4().hex}"
             src = html.escape(el["file"], quote=True)
             html_parts.append(f"""
             <img class="image"
+                id="{element_id}"
+                category="image"
                 src="{src}"
                 style="
                     left:{s(x0)}px;
@@ -321,7 +328,80 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
 
         html_parts.append("</svg>")
 
-    html_parts.append("</div></body></html>")
+    html_parts.append("""
+    </div>
+    <script>
+      (function () {
+        const page = document.querySelector(".page");
+        if (!page) return;
+
+        const selectionRecords = [];
+        let mouseDownDivId = null;
+
+        function getTextDivFromEvent(event) {
+          const target = event.target;
+          if (!(target instanceof Element)) return null;
+          const textDiv = target.closest('div.text[category="text"]');
+          return textDiv;
+        }
+
+        function getSelectedTextDivIds(selection) {
+          if (!selection || selection.rangeCount === 0) return [];
+
+          const range = selection.getRangeAt(0);
+          const textDivs = Array.from(
+            page.querySelectorAll('div.text[category="text"]')
+          );
+
+          return textDivs
+            .filter(function (div) {
+              try {
+                return range.intersectsNode(div);
+              } catch (error) {
+                return false;
+              }
+            })
+            .map(function (div) {
+              return div.id;
+            });
+        }
+
+        page.addEventListener("mousedown", function (event) {
+          const textDiv = getTextDivFromEvent(event);
+          mouseDownDivId = textDiv ? textDiv.id : null;
+        });
+
+        page.addEventListener("mouseup", function (event) {
+          const textDiv = getTextDivFromEvent(event);
+          const mouseUpDivId = textDiv ? textDiv.id : null;
+          const selection = window.getSelection();
+          const selectedText = selection ? selection.toString().trim() : "";
+          const selectedDivIds = getSelectedTextDivIds(selection);
+
+          const allDivIds = [];
+          if (mouseDownDivId) allDivIds.push(mouseDownDivId);
+          if (mouseUpDivId) allDivIds.push(mouseUpDivId);
+          selectedDivIds.forEach(function (id) {
+            if (!allDivIds.includes(id)) {
+              allDivIds.push(id);
+            }
+          });
+
+          const record = {
+            divIds: allDivIds,
+            selectedTexts: selectedText ? [selectedText] : [],
+          };
+          selectionRecords.push(record);
+
+          console.log("selection:", record);
+        });
+
+        window.selectionRecords = selectionRecords;
+      })();
+    </script>
+    </body>
+    </html>
+    """)
 
     with open(out_file, "w") as f:
         f.write("\n".join(html_parts))
