@@ -42,7 +42,7 @@ module BookPlugin
         assert_match(%r{/extract2\.py\z}, command_args[1])
         assert_equal "/tmp/book.pdf", command_args[2]
         assert_equal "4", option_value(command_args, "--page")
-        assert_equal "1", option_value(command_args, "--load-js")
+        assert_equal "0", option_value(command_args, "--load-js")
         assert option_value(command_args, "--out").end_with?(".html")
         refute_includes command_args, "--scale"
         refute_includes command_args, "--output-dir"

@@ -12,7 +12,7 @@ module BookPlugin
     DEFAULT_TIMEOUT_SECONDS = 30
 
     class << self
-      def call(pdf_path:, page_number:, timeout_seconds: DEFAULT_TIMEOUT_SECONDS, load_js: true)
+      def call(pdf_path:, page_number:, timeout_seconds: DEFAULT_TIMEOUT_SECONDS, load_js: false)
         normalized_page_number = normalize_page_number(page_number)
         return failure("Page number must be an integer greater than or equal to 1") unless normalized_page_number
 

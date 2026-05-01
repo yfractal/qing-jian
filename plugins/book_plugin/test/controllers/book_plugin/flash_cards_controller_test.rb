@@ -62,7 +62,7 @@ module BookPlugin
       assert_response :success
       assert_equal true, extractor_called
       assert_equal 3, extractor_page_number
-      assert_equal true, extractor_load_js
+      assert_equal false, extractor_load_js
       assert_equal true, pdf_path_present
       assert_equal "%PDF-1.4", pdf_header
       assert_equal 1, BookHtml.where(book:, page_number: 3).count
