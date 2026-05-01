@@ -42,9 +42,28 @@ module BookPlugin
         assert_match(%r{/extract2\.py\z}, command_args[1])
         assert_equal "/tmp/book.pdf", command_args[2]
         assert_equal "4", option_value(command_args, "--page")
+        assert_equal "1", option_value(command_args, "--load-js")
         assert option_value(command_args, "--out").end_with?(".html")
         refute_includes command_args, "--scale"
         refute_includes command_args, "--output-dir"
+      end
+    end
+
+    test "passes explicit load_js false to extractor command" do
+      status = StatusDouble.new(true, 0, false, nil, true)
+      command_args = nil
+      option_lookup = ->(command, flag) { command[command.index(flag) + 1] }
+
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
+        command_args = command
+        out_path = option_lookup.call(command, "--out")
+        File.write(out_path, "<article>Extracted</article>")
+        ["", "", status, false]
+      }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 5, load_js: false)
+
+        assert_predicate result, :success?
+        assert_equal "0", option_value(command_args, "--load-js")
       end
     end
 

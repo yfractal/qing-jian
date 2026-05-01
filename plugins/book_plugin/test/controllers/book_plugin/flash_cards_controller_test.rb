@@ -43,12 +43,14 @@ module BookPlugin
       book = create_book_with_pdf
       extractor_called = false
       extractor_page_number = nil
+      extractor_load_js = nil
       pdf_path_present = nil
       pdf_header = nil
 
-      with_singleton_stub(PdfHtmlExtractor, :call, lambda { |pdf_path:, page_number:, **|
+      with_singleton_stub(PdfHtmlExtractor, :call, lambda { |pdf_path:, page_number:, load_js:, **|
         extractor_called = true
         extractor_page_number = page_number
+        extractor_load_js = load_js
         pdf_path_present = File.exist?(pdf_path)
         pdf_header = File.binread(pdf_path, 8)
 
@@ -60,6 +62,7 @@ module BookPlugin
       assert_response :success
       assert_equal true, extractor_called
       assert_equal 3, extractor_page_number
+      assert_equal true, extractor_load_js
       assert_equal true, pdf_path_present
       assert_equal "%PDF-1.4", pdf_header
       assert_equal 1, BookHtml.where(book:, page_number: 3).count

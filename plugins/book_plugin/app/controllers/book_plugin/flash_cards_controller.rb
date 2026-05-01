@@ -65,7 +65,7 @@ module BookPlugin
       return PdfHtmlExtractor::Result.new(html: nil, error_message: "Book file is not attached") unless @book.file.attached?
 
       @book.file.blob.open do |tempfile|
-        PdfHtmlExtractor.call(pdf_path: tempfile.path, page_number: page_number)
+        PdfHtmlExtractor.call(pdf_path: tempfile.path, page_number: page_number, load_js: true)
       end
     rescue StandardError => e
       PdfHtmlExtractor::Result.new(html: nil, error_message: e.message)
