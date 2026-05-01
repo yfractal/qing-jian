@@ -1,4 +1,7 @@
 <% content_for :title, "Create Flash Card" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "book_plugin/books", "data-turbo-track": "reload" %>
+<% end %>
 
 <main class="remember-page books-page">
   <header class="remember-header">
