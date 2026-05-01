@@ -261,6 +261,19 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
             pointer-events:none;
             overflow: visible;
         }}
+
+        #selection-box {{
+            position: absolute;
+            border: 2px dashed #007bff;
+            background: rgba(0, 123, 255, 0.15);
+            display: none;
+            pointer-events: none;
+            z-index: 10;
+        }}
+
+        .hidden {{
+            display: none !important;
+        }}
     </style>
     </head>
     <body>
@@ -329,14 +342,20 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
         html_parts.append("</svg>")
 
     html_parts.append("""
+    <div id="selection-box"></div>
     </div>
     <script>
       (function () {
         const page = document.querySelector(".page");
         if (!page) return;
+        const selectionBox = document.getElementById("selection-box");
 
         const selectionRecords = [];
         let mouseDownDivId = null;
+        let startX = 0;
+        let startY = 0;
+        let isSelecting = false;
+        let selection = null;
 
         function getTextDivFromEvent(event) {
           const target = event.target;
@@ -369,14 +388,55 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
         page.addEventListener("mousedown", function (event) {
           const textDiv = getTextDivFromEvent(event);
           mouseDownDivId = textDiv ? textDiv.id : null;
+
+          const rect = page.getBoundingClientRect();
+          startX = event.clientX - rect.left;
+          startY = event.clientY - rect.top;
+          isSelecting = true;
+
+          selectionBox.style.left = startX + "px";
+          selectionBox.style.top = startY + "px";
+          selectionBox.style.width = "0px";
+          selectionBox.style.height = "0px";
+          selectionBox.style.display = "block";
+        });
+
+        page.addEventListener("mousemove", function (event) {
+          if (!isSelecting) return;
+
+          const rect = page.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const y = event.clientY - rect.top;
+
+          const w = x - startX;
+          const h = y - startY;
+
+          selectionBox.style.width = Math.abs(w) + "px";
+          selectionBox.style.height = Math.abs(h) + "px";
+          selectionBox.style.left = (w < 0 ? x : startX) + "px";
+          selectionBox.style.top = (h < 0 ? y : startY) + "px";
         });
 
         page.addEventListener("mouseup", function (event) {
+          isSelecting = false;
+
           const textDiv = getTextDivFromEvent(event);
           const mouseUpDivId = textDiv ? textDiv.id : null;
-          const selection = window.getSelection();
-          const selectedText = selection ? selection.toString().trim() : "";
-          const selectedDivIds = getSelectedTextDivIds(selection);
+          const browserSelection = window.getSelection();
+          const selectedText = browserSelection ? browserSelection.toString().trim() : "";
+          const selectedDivIds = getSelectedTextDivIds(browserSelection);
+
+          const box = selectionBox.getBoundingClientRect();
+          const pageRect = page.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0) {
+            selection = {
+              x0: box.left - pageRect.left,
+              y0: box.top - pageRect.top,
+              x1: box.right - pageRect.left,
+              y1: box.bottom - pageRect.top,
+            };
+            filterElements();
+          }
 
           const allDivIds = [];
           if (mouseDownDivId) allDivIds.push(mouseDownDivId);
@@ -394,6 +454,48 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
           selectionRecords.push(record);
 
           console.log("selection:", record);
+        });
+
+        function intersects(elBox, sel) {
+          return !(
+            elBox.right < sel.x0 ||
+            elBox.left > sel.x1 ||
+            elBox.bottom < sel.y0 ||
+            elBox.top > sel.y1
+          );
+        }
+
+        function filterElements() {
+          if (!selection) return;
+
+          const pageRect = page.getBoundingClientRect();
+          const elements = page.querySelectorAll(".text, .image, .vector-layer");
+
+          elements.forEach(function (el) {
+            const r = el.getBoundingClientRect();
+            const elBox = {
+              left: r.left - pageRect.left,
+              right: r.right - pageRect.left,
+              top: r.top - pageRect.top,
+              bottom: r.bottom - pageRect.top,
+            };
+
+            if (intersects(elBox, selection)) {
+              el.classList.remove("hidden");
+            } else {
+              el.classList.add("hidden");
+            }
+          });
+        }
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key !== "r") return;
+
+          document.querySelectorAll(".hidden").forEach(function (el) {
+            el.classList.remove("hidden");
+          });
+          selectionBox.style.display = "none";
+          selection = null;
         });
 
         window.selectionRecords = selectionRecords;
