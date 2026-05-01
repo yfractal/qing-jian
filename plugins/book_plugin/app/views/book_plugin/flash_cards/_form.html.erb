@@ -1,0 +1,18 @@
+<% return unless book_html.present? %>
+
+<section class="book-card">
+  <h2>2) Create flash card</h2>
+  <p class="book-html-preview"><%= book_html.html %></p>
+
+  <%= form_with model: [book, flash_card], local: true do |f| %>
+    <%= f.hidden_field :book_html_id, value: book_html.id %>
+
+    <%= f.label :areas_to_show, "Areas to show (JSON)" %>
+    <%= text_area_tag "flash_card[areas_to_show]", flash_card.areas_to_show.to_json, rows: 5 %>
+
+    <%= label_tag "flash_card_items_to_remember_text", "Items to remember (one per line)" %>
+    <%= text_area_tag "flash_card[items_to_remember_text]", flash_card.items_to_remember.join("\n"), rows: 5 %>
+
+    <%= f.submit "Create flash card", class: "button button-primary" %>
+  <% end %>
+</section>

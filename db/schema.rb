@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_01_082729) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_01_090303) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,11 +42,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_01_082729) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "book_plugin_book_htmls", force: :cascade do |t|
+    t.bigint "book_id", null: false
+    t.datetime "created_at", null: false
+    t.text "html", null: false
+    t.integer "page_number", null: false
+    t.datetime "updated_at", null: false
+    t.index ["book_id", "page_number"], name: "index_book_plugin_book_htmls_on_book_id_and_page_number", unique: true
+    t.index ["book_id"], name: "index_book_plugin_book_htmls_on_book_id"
+  end
+
   create_table "book_plugin_books", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
     t.string "title", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "book_plugin_flash_cards", force: :cascade do |t|
+    t.jsonb "areas_to_show", default: {}, null: false
+    t.bigint "book_html_id", null: false
+    t.bigint "book_id", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "items_to_remember", default: [], null: false
+    t.datetime "updated_at", null: false
+    t.index ["book_html_id"], name: "index_book_plugin_flash_cards_on_book_html_id"
+    t.index ["book_id"], name: "index_book_plugin_flash_cards_on_book_id"
   end
 
   create_table "similar_words", force: :cascade do |t|
@@ -98,6 +119,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_01_082729) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "book_plugin_book_htmls", "book_plugin_books", column: "book_id"
+  add_foreign_key "book_plugin_flash_cards", "book_plugin_book_htmls", column: "book_html_id"
+  add_foreign_key "book_plugin_flash_cards", "book_plugin_books", column: "book_id"
   add_foreign_key "similar_words", "word_questions"
   add_foreign_key "word_question_records", "word_questions"
   add_foreign_key "word_questions", "words"

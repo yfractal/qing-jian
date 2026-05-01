@@ -1,6 +1,8 @@
 module BookPlugin
   class Book < ApplicationRecord
     has_one_attached :file
+    has_many :book_htmls, dependent: :destroy
+    has_many :flash_cards, dependent: :destroy
 
     validates :title, presence: true
     validate :file_must_be_attached
