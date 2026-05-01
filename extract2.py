@@ -18,6 +18,29 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
 <style>
 body {{ background:#eee; }}
 
+.toolbar {{
+    width:{s(width)}px;
+    margin:20px auto 0 auto;
+    display:flex;
+    gap:10px;
+}}
+
+.toolbar button {{
+    border:1px solid #c9d2dc;
+    background:#f7fafc;
+    color:#1f2933;
+    border-radius:6px;
+    padding:8px 12px;
+    font-size:14px;
+    cursor:pointer;
+}}
+
+.toolbar button.is-active {{
+    background:#1f6feb;
+    border-color:#1f6feb;
+    color:#fff;
+}}
+
 .page {{
     position: relative;
     width:{s(width)}px;
@@ -59,9 +82,18 @@ body {{ background:#eee; }}
 .hidden {{
     display: none !important;
 }}
+
+.remembered {{
+    background: rgba(255, 208, 0, 0.45);
+    outline: 1px solid rgba(255, 166, 0, 0.9);
+}}
 </style>
 </head>
 <body>
+<div class="toolbar">
+    <button id="btn-pick-area" type="button">Pick area to show</button>
+    <button id="btn-pick-text" type="button">Pick items to remember</button>
+</div>
 <div class="page">
 """)
 
