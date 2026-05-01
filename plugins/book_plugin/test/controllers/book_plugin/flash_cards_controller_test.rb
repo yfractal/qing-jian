@@ -18,7 +18,7 @@ module BookPlugin
       get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 3 }
       assert_response :success
       assert_equal 1, BookHtml.where(book:, page_number: 3).count
-      assert_select ".book-html-preview", /Mock HTML for page 3/
+      assert_select "iframe.book-html-preview-frame[srcdoc*='Mock HTML for page 3']"
     end
 
     test "create persists flash card" do

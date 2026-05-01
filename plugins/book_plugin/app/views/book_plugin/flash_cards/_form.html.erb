@@ -2,7 +2,12 @@
 
 <section class="book-card">
   <h2>2) Create flash card</h2>
-  <p class="book-html-preview"><%= book_html.html %></p>
+  <iframe
+    class="book-html-preview-frame"
+    title="Book page HTML preview"
+    sandbox
+    srcdoc="<%= h(book_html.html) %>">
+  </iframe>
 
   <%= form_with model: [book, flash_card], local: true do |f| %>
     <%= f.hidden_field :book_html_id, value: book_html.id %>
