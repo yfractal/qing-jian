@@ -1,6 +1,34 @@
 import fitz
 import os
-import html
+
+
+def merge_rects(rects, threshold=5):
+    merged = []
+
+    for r in rects:
+        rx0, ry0, rx1, ry1 = r
+        merged_flag = False
+
+        for i, m in enumerate(merged):
+            mx0, my0, mx1, my1 = m
+
+            # overlap / near check
+            if not (rx1 < mx0 - threshold or rx0 > mx1 + threshold or
+                    ry1 < my0 - threshold or ry0 > my1 + threshold):
+
+                merged[i] = [
+                    min(mx0, rx0),
+                    min(my0, ry0),
+                    max(mx1, rx1),
+                    max(my1, ry1)
+                ]
+                merged_flag = True
+                break
+
+        if not merged_flag:
+            merged.append(list(r))
+
+    return merged
 
 
 def extract_layout(pdf_path, page_number):
@@ -8,11 +36,10 @@ def extract_layout(pdf_path, page_number):
     page = doc[page_number]
 
     layout = []
-
     data = page.get_text("dict")
 
     # ------------------------
-    # TEXT (line-based)
+    # TEXT (same as before)
     # ------------------------
     for block in data["blocks"]:
         if block["type"] != 0:
@@ -20,19 +47,15 @@ def extract_layout(pdf_path, page_number):
 
         for line in block["lines"]:
             spans = line["spans"]
-
             if not spans:
                 continue
 
-            # Merge spans into one line
-            text = "".join(span["text"] for span in spans).strip()
+            text = "".join(s["text"] for s in spans).strip()
             if not text:
                 continue
 
             x0, y0, x1, y1 = line["bbox"]
-
-            # estimate font size
-            font_size = max(span["size"] for span in spans)
+            font_size = max(s["size"] for s in spans)
 
             layout.append({
                 "type": "text",
@@ -42,7 +65,7 @@ def extract_layout(pdf_path, page_number):
             })
 
     # ------------------------
-    # IMAGES
+    # IMAGES (same)
     # ------------------------
     img_index = 0
     for block in data["blocks"]:
@@ -61,27 +84,54 @@ def extract_layout(pdf_path, page_number):
         else:
             continue
 
-        filename = f"img_{page_number}_{img_index}.{ext}"
         os.makedirs("output", exist_ok=True)
-        filepath = os.path.join("output", filename)
+        filename = f"img_{page_number}_{img_index}.{ext}"
+        path = os.path.join("output", filename)
 
-        with open(filepath, "wb") as f:
+        with open(path, "wb") as f:
             f.write(image_bytes)
 
         layout.append({
             "type": "image",
-            "file": filepath,
+            "file": path,
             "bbox": [x0, y0, x1, y1]
         })
 
         img_index += 1
 
+    # ------------------------
+    # VECTORS (cleaned)
+    # ------------------------
+    raw_rects = []
+
+    for d in page.get_drawings():
+        rect = d.get("rect")
+        if not rect:
+            continue
+
+        x0, y0, x1, y1 = rect
+
+        w = x1 - x0
+        h = y1 - y0
+
+        # filter tiny noise
+        if w < 5 or h < 5:
+            continue
+
+        raw_rects.append([x0, y0, x1, y1])
+
+    merged_rects = merge_rects(raw_rects)
+
+    for r in merged_rects:
+        x0, y0, x1, y1 = r
+
+        layout.append({
+            "type": "vector",
+            "bbox": [x0, y0, x1, y1]
+        })
+
     return layout, page.rect.width, page.rect.height
 
-
-# ------------------------
-# HTML RENDERER
-# ------------------------
 
 def render_html(layout, width, height, out_file="page.html", scale=1.5):
     def s(v): return v * scale
@@ -93,9 +143,8 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
     <head>
     <meta charset="utf-8">
     <style>
-        body {{
-            background:#eee;
-        }}
+        body {{ background:#eee; }}
+
         .page {{
             position: relative;
             width:{s(width)}px;
@@ -103,13 +152,23 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
             margin:20px auto;
             background:white;
         }}
+
         .text {{
             position:absolute;
             white-space:nowrap;
-            transform-origin: left top;
+            z-index: 3;
         }}
+
         .image {{
             position:absolute;
+            z-index: 1;
+        }}
+
+        .vector {{
+            position:absolute;
+            border: 1px solid rgba(255,0,0,0.4);
+            z-index: 2;
+            pointer-events:none;
         }}
     </style>
     </head>
@@ -117,54 +176,53 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
     <div class="page">
     """)
 
-    # Sort for correct layering (top → bottom)
     layout.sort(key=lambda x: (x["bbox"][1], x["bbox"][0]))
 
     for el in layout:
         x0, y0, x1, y1 = el["bbox"]
 
         if el["type"] == "text":
-            text = html.escape(el["text"])
-            font_size = el["font_size"] * scale * 0.9
-
             html_parts.append(f"""
             <div class="text"
                 style="
                     left:{s(x0)}px;
                     top:{s(y0)}px;
-                    font-size:{font_size}px;
+                    font-size:{el['font_size'] * scale * 0.9}px;
                 ">
-                {text}
+                {el['text']}
             </div>
             """)
 
         elif el["type"] == "image":
-            w = s(x1 - x0)
-            h = s(y1 - y0)
-
             html_parts.append(f"""
             <img class="image"
                 src="{el['file']}"
                 style="
                     left:{s(x0)}px;
                     top:{s(y0)}px;
-                    width:{w}px;
-                    height:{h}px;
+                    width:{s(x1-x0)}px;
+                    height:{s(y1-y0)}px;
                 ">
             """)
 
-    html_parts.append("""
-    </div>
-    </body>
-    </html>
-    """)
+        elif el["type"] == "vector":
+            html_parts.append(f"""
+            <div class="vector"
+                style="
+                    left:{s(x0)}px;
+                    top:{s(y0)}px;
+                    width:{s(x1-x0)}px;
+                    height:{s(y1-y0)}px;
+                ">
+            </div>
+            """)
 
-    with open(out_file, "w", encoding="utf-8") as f:
+    html_parts.append("</div></body></html>")
+
+    with open(out_file, "w") as f:
         f.write("\n".join(html_parts))
 
     print(f"Saved → {out_file}")
-
-
 # ------------------------
 # MAIN
 # ------------------------
