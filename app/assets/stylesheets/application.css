@@ -573,6 +573,43 @@ input[type="submit"].button-large {
   z-index: 2;
 }
 
+.statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]::before,
+.statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]::after {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 7px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(2px);
+  transition: opacity 0.06s ease, transform 0.06s ease;
+  z-index: 5;
+}
+
+.statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]::before {
+  content: "";
+  bottom: calc(100% + 3px);
+  border: 4px solid transparent;
+  border-top-color: #0f172a;
+}
+
+.statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]::after {
+  content: attr(data-tooltip);
+  padding: 0.3rem 0.45rem;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+}
+
+.statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]:hover::before,
+.statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .statistics-heatmap-level-0 {
   background: #ebedf0;
 }
