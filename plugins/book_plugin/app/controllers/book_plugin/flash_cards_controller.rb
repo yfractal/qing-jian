@@ -5,6 +5,13 @@ module BookPlugin
     def new
       @page_number = params[:page_number].presence&.to_i
       @book_html = find_or_create_book_html(@page_number) if @page_number
+      if @page_number && @book_html.nil?
+        @flash_card = @book.flash_cards.new
+        flash.now[:alert] = "Could not extract page HTML. Please try again."
+        render :new, status: :unprocessable_entity
+        return
+      end
+
       @flash_card = @book.flash_cards.new(book_html: @book_html)
     end
 
@@ -30,10 +37,23 @@ module BookPlugin
     end
 
     def find_or_create_book_html(page_number)
-      @book.book_htmls.find_or_create_by!(page_number:) do |book_html|
-        # Mock backend extraction for now.
-        book_html.html = "<article><h2>Mock HTML for page #{page_number}</h2><p>Replace with PDF extractor later.</p></article>"
+      cached_book_html = @book.book_htmls.find_by(page_number:)
+      return cached_book_html if cached_book_html
+
+      extraction_result = extract_page_html(page_number)
+      return nil unless extraction_result.success?
+
+      @book.book_htmls.create!(page_number:, html: extraction_result.html)
+    end
+
+    def extract_page_html(page_number)
+      return PdfHtmlExtractor::Result.new(html: nil, error_message: "Book file is not attached") unless @book.file.attached?
+
+      @book.file.blob.open do |tempfile|
+        PdfHtmlExtractor.call(pdf_path: tempfile.path, page_number:)
       end
+    rescue StandardError => e
+      PdfHtmlExtractor::Result.new(html: nil, error_message: e.message)
     end
 
     def flash_card_params
