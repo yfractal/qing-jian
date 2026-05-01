@@ -1,0 +1,22 @@
+<% content_for :title, "Edit #{@book.title}" %>
+
+<main class="remember-page books-page">
+  <header class="remember-header">
+    <div>
+      <p class="eyebrow">Library</p>
+      <h1>Edit book</h1>
+    </div>
+    <div class="remember-header-actions">
+      <%= link_to "Show", book_path(@book), class: "button button-secondary" %>
+      <%= link_to "All books", books_path, class: "button button-secondary" %>
+    </div>
+  </header>
+
+  <% if flash.now[:alert].present? %>
+    <p class="flash flash-alert" role="alert"><%= flash.now[:alert] %></p>
+  <% end %>
+
+  <section class="book-card">
+    <%= render "form", book: @book %>
+  </section>
+</main>

@@ -1,0 +1,19 @@
+.books-page {
+  max-width: 860px;
+}
+
+.books-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.book-card {
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  padding: 1rem;
+  background: linear-gradient(180deg, #f8fbff 0%, #fff 100%);
+}
+
+.book-card h2 {
+  margin-top: 0;
+}

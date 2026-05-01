@@ -1,0 +1,27 @@
+<% content_for :title, @book.title %>
+
+<main class="remember-page books-page">
+  <header class="remember-header">
+    <div>
+      <p class="eyebrow">Book</p>
+      <h1><%= @book.title %></h1>
+    </div>
+    <div class="remember-header-actions">
+      <%= link_to "All books", books_path, class: "button button-secondary" %>
+    </div>
+  </header>
+
+  <section class="book-card">
+    <h2>Description</h2>
+    <p><%= simple_format(@book.description.to_s) %></p>
+    <% if @book.file.attached? %>
+      <p>
+        <%= link_to "Download PDF", rails_blob_path(@book.file, disposition: "attachment"), class: "button button-secondary" %>
+      </p>
+    <% end %>
+    <div class="actions">
+      <%= link_to "Edit", edit_book_path(@book), class: "button button-primary" %>
+      <%= button_to "Delete", book_path(@book), method: :delete, class: "button button-danger", form: { data: { turbo_confirm: "Delete this book?" } } %>
+    </div>
+  </section>
+</main>

@@ -1,0 +1,54 @@
+<%= form_with model: book, local: true, html: { multipart: true }, data: { book_form: true } do |f| %>
+  <% if book.errors.any? %>
+    <div class="form-errors" role="alert">
+      <h2><%= pluralize(book.errors.count, "error") %> prevented this book from being saved:</h2>
+      <ul>
+        <% book.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :title %>
+    <%= f.text_field :title, required: true, data: { book_title_input: true } %>
+  </div>
+
+  <div class="field">
+    <%= f.label :file, "PDF file" %>
+    <%= f.file_field :file, accept: "application/pdf", data: { book_file_input: true } %>
+  </div>
+
+  <div class="field">
+    <%= f.label :description %>
+    <%= f.text_area :description, rows: 5 %>
+  </div>
+
+  <div class="actions">
+    <%= f.submit class: "button button-primary" %>
+    <%= link_to "Cancel", books_path, class: "button button-secondary" %>
+  </div>
+<% end %>
+
+<script>
+  document.addEventListener("change", function(event) {
+    const fileInput = event.target.closest("[data-book-file-input]");
+    if (!fileInput) return;
+
+    const form = fileInput.closest("form[data-book-form]");
+    const titleInput = form && form.querySelector("[data-book-title-input]");
+    if (!titleInput) return;
+
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+
+    const suggestedTitle = file.name.replace(/\.pdf$/i, "").trim();
+    if (!suggestedTitle) return;
+
+    if (!titleInput.value || titleInput.value === titleInput.dataset.autofilledTitle) {
+      titleInput.value = suggestedTitle;
+      titleInput.dataset.autofilledTitle = suggestedTitle;
+    }
+  });
+</script>

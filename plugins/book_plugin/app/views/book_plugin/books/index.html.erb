@@ -1,0 +1,36 @@
+<% content_for :title, "Books" %>
+
+<main class="remember-page books-page">
+  <header class="remember-header">
+    <div>
+      <p class="eyebrow">Library</p>
+      <h1>Books</h1>
+    </div>
+    <div class="remember-header-actions">
+      <%= link_to "New book", new_book_path, class: "button button-primary" %>
+    </div>
+  </header>
+
+  <% if @books.any? %>
+    <div class="books-list">
+      <% @books.each do |book| %>
+        <article class="book-card">
+          <h2><%= link_to book.title, book_path(book) %></h2>
+          <p><%= truncate(book.description.to_s, length: 160) %></p>
+          <div class="actions">
+            <%= link_to "Show", book_path(book), class: "button button-small" %>
+            <%= link_to "Edit", edit_book_path(book), class: "button button-small" %>
+            <%= button_to "Delete", book_path(book), method: :delete, class: "button button-small button-danger", form: { data: { turbo_confirm: "Delete this book?" } } %>
+          </div>
+        </article>
+      <% end %>
+    </div>
+  <% else %>
+    <section class="completion-card">
+      <p class="eyebrow">Library</p>
+      <h2>No books yet</h2>
+      <p>Upload your first PDF to create a book entry.</p>
+      <%= link_to "New book", new_book_path, class: "button button-primary" %>
+    </section>
+  <% end %>
+</main>
