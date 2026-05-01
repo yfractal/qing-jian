@@ -110,6 +110,18 @@ def build_selection_js(scale, initial_area=None):
         }}
     }}
 
+    function syncRememberedHighlights() {{
+        document.querySelectorAll(".text.remembered").forEach((el) => {{
+            el.classList.remove("remembered");
+        }});
+        rememberedTextIds.forEach((id) => {{
+            const el = document.getElementById(id);
+            if (el && el.classList.contains("text")) {{
+                el.classList.add("remembered");
+            }}
+        }});
+    }}
+
     page.addEventListener("mouseup", () => {{
         if (mode !== "area" || !isSelecting) return;
         isSelecting = false;
@@ -164,11 +176,10 @@ def build_selection_js(scale, initial_area=None):
 
         if (rememberedTextIds.has(target.id)) {{
             rememberedTextIds.delete(target.id);
-            target.classList.remove("remembered");
         }} else {{
             rememberedTextIds.add(target.id);
-            target.classList.add("remembered");
         }}
+        syncRememberedHighlights();
 
         const pickedTexts = Array.from(rememberedTextIds)
             .map((id) => document.getElementById(id))
@@ -188,6 +199,7 @@ def build_selection_js(scale, initial_area=None):
         }});
         selectionBox.style.display = "none";
         currentSelection = null;
+        syncRememberedHighlights();
     }});
 
     setMode("area");
