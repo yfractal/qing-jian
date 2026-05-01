@@ -27,7 +27,7 @@ def parse_area(area_raw):
     }
 
 
-def render_html(layout, width, height, out_file="page.html", scale=1.5, area=None):
+def render_html(layout, width, height, out_file="page.html", scale=1.5, area=None, load_js=True):
     def s(v): return v * scale
 
     html_parts = []
@@ -202,10 +202,14 @@ body {{ background:#eee; }}
 </div>
 """)
 
-    html_parts.append(f"""
+    if load_js:
+        html_parts.append(f"""
 <script>
 {build_selection_js(scale, area)}
 </script>
+""")
+
+    html_parts.append("""
 </body>
 </html>
 """)
@@ -231,6 +235,13 @@ def parse_args():
         default=None,
         help="Initial PDF area as x0,y0,x1,y1",
     )
+    parser.add_argument(
+        "--load-js",
+        type=int,
+        choices=[0, 1],
+        default=1,
+        help="Whether to inject selection JS (1=enabled, 0=disabled)",
+    )
     return parser.parse_args()
 
 
@@ -238,4 +249,13 @@ if __name__ == "__main__":
     args = parse_args()
     layout, width, height = extract_layout(args.pdf_path, args.page, args.output_dir)
     area = parse_area(args.area)
-    render_html(layout, width, height, out_file=args.out, scale=args.scale, area=area)
+    load_js = bool(args.load_js)
+    render_html(
+        layout,
+        width,
+        height,
+        out_file=args.out,
+        scale=args.scale,
+        area=area,
+        load_js=load_js,
+    )
