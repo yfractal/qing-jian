@@ -22,4 +22,5 @@ Rails.application.routes.draw do
     end
   end
   resources :word_question_records, only: :create
+  mount BookPlugin::Engine => "/books"
 end
