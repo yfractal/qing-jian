@@ -82,6 +82,38 @@ def path_d_for_item(item):
     return None
 
 
+def path_bbox_for_item(item):
+    operator = item[0]
+    points = []
+
+    if operator == "l":
+        points = [point_xy(item[1]), point_xy(item[2])]
+    elif operator == "c":
+        points = [
+            point_xy(item[1]),
+            point_xy(item[2]),
+            point_xy(item[3]),
+            point_xy(item[4]),
+        ]
+    elif operator == "re":
+        x0, y0, x1, y1 = rect_xy(item[1])
+        points = [(x0, y0), (x1, y1)]
+    elif operator == "qu":
+        quad = item[1]
+        points = [
+            point_xy(quad.ul),
+            point_xy(quad.ur),
+            point_xy(quad.lr),
+            point_xy(quad.ll),
+        ]
+    else:
+        return None
+
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    return [min(xs), min(ys), max(xs), max(ys)]
+
+
 def drawing_to_svg_paths(drawing):
     stroke = color_to_css(drawing.get("color"))
     fill = color_to_css(drawing.get("fill"))
@@ -90,7 +122,8 @@ def drawing_to_svg_paths(drawing):
     paths = []
     for item in drawing.get("items", []):
         path_d = path_d_for_item(item)
-        if not path_d:
+        path_bbox = path_bbox_for_item(item)
+        if not path_d or not path_bbox:
             continue
 
         paths.append({
@@ -98,6 +131,7 @@ def drawing_to_svg_paths(drawing):
             "stroke": stroke,
             "stroke_width": stroke_width,
             "fill": fill,
+            "bbox": path_bbox,
         })
 
     return paths
@@ -226,289 +260,260 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
     html_parts = []
 
     html_parts.append(f"""
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <style>
-        body {{ background:#eee; }}
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body {{ background:#eee; }}
 
-        .page {{
-            position: relative;
-            width:{s(width)}px;
-            height:{s(height)}px;
-            margin:20px auto;
-            background:white;
-        }}
+.page {{
+    position: relative;
+    width:{s(width)}px;
+    height:{s(height)}px;
+    margin:20px auto;
+    background:white;
+}}
 
-        .text {{
-            position:absolute;
-            white-space:nowrap;
-            z-index: 3;
-        }}
+.text {{
+    position:absolute;
+    white-space:nowrap;
+    z-index: 3;
+}}
 
-        .image {{
-            position:absolute;
-            z-index: 1;
-        }}
+.image {{
+    position:absolute;
+    z-index: 1;
+}}
 
-        .vector-layer {{
-            position:absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            pointer-events:none;
-            overflow: visible;
-        }}
+.vector-layer {{
+    position:absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events:none;
+}}
 
-        #selection-box {{
-            position: absolute;
-            border: 2px dashed #007bff;
-            background: rgba(0, 123, 255, 0.15);
-            display: none;
-            pointer-events: none;
-            z-index: 10;
-        }}
+#selection-box {{
+    position: absolute;
+    border: 2px dashed #007bff;
+    background: rgba(0, 123, 255, 0.15);
+    display: none;
+    pointer-events: none;
+    z-index: 10;
+}}
 
-        .hidden {{
-            display: none !important;
-        }}
-    </style>
-    </head>
-    <body>
-    <div class="page">
-    """)
+.hidden {{
+    display: none !important;
+}}
+</style>
+</head>
+<body>
+<div class="page">
+""")
 
     layout.sort(key=lambda x: (x["bbox"][1], x["bbox"][0]))
     vector_paths = []
 
+    # ------------------------
+    # TEXT + IMAGE
+    # ------------------------
     for el in layout:
         x0, y0, x1, y1 = el["bbox"]
 
         if el["type"] == "text":
             element_id = f"el-{uuid.uuid4().hex}"
+            text = html.escape(el["text"])
+
             html_parts.append(f"""
-            <div class="text"
-                id="{element_id}"
-                category="text"
-                style="
-                    left:{s(x0)}px;
-                    top:{s(y0)}px;
-                    font-size:{el['font_size'] * scale * 0.9}px;
-                ">
-                {el['text']}
-            </div>
-            """)
+<div class="text"
+    id="{element_id}"
+    category="text"
+    style="
+        left:{s(x0)}px;
+        top:{s(y0)}px;
+        font-size:{el['font_size'] * scale * 0.9}px;
+    ">
+    {text}
+</div>
+""")
 
         elif el["type"] == "image":
             element_id = f"el-{uuid.uuid4().hex}"
             src = html.escape(el["file"], quote=True)
+
             html_parts.append(f"""
-            <img class="image"
-                id="{element_id}"
-                category="image"
-                src="{src}"
-                style="
-                    left:{s(x0)}px;
-                    top:{s(y0)}px;
-                    width:{s(x1-x0)}px;
-                    height:{s(y1-y0)}px;
-                ">
-            """)
+<img class="image"
+    id="{element_id}"
+    category="image"
+    src="{src}"
+    style="
+        left:{s(x0)}px;
+        top:{s(y0)}px;
+        width:{s(x1-x0)}px;
+        height:{s(y1-y0)}px;
+    ">
+""")
 
         elif el["type"] == "vector":
             vector_paths.extend(el.get("paths", []))
 
+    # ------------------------
+    # SVG
+    # ------------------------
     if vector_paths:
         html_parts.append(f"""
-            <svg class="vector-layer"
-                 viewBox="0 0 {width} {height}"
-                 preserveAspectRatio="none">
-        """)
+<svg class="vector-layer"
+     viewBox="0 0 {width} {height}"
+     preserveAspectRatio="none">
+""")
 
         for path in vector_paths:
             d = html.escape(path["d"], quote=True)
             stroke = html.escape(path.get("stroke", "none"), quote=True)
             fill = html.escape(path.get("fill", "none"), quote=True)
             stroke_width = path.get("stroke_width", 1)
+            x0, y0, x1, y1 = path["bbox"]
+
             html_parts.append(f"""
-                <path d="{d}"
-                      stroke="{stroke}"
-                      stroke-width="{stroke_width}"
-                      fill="{fill}" />
-            """)
+<path d="{d}"
+      stroke="{stroke}"
+      stroke-width="{stroke_width}"
+      fill="{fill}"
+      data-x0="{fmt_num(x0)}"
+      data-y0="{fmt_num(y0)}"
+      data-x1="{fmt_num(x1)}"
+      data-y1="{fmt_num(y1)}" />
+""")
 
         html_parts.append("</svg>")
 
+    # ------------------------
+    # SELECTION BOX
+    # ------------------------
     html_parts.append("""
-    <div id="selection-box"></div>
-    </div>
-    <script>
-      (function () {
-        const page = document.querySelector(".page");
-        if (!page) return;
-        const selectionBox = document.getElementById("selection-box");
+<div id="selection-box"></div>
+</div>
+""")
 
-        const selectionRecords = [];
-        let mouseDownDivId = null;
-        let startX = 0;
-        let startY = 0;
-        let isSelecting = false;
-        let selection = null;
+    # ------------------------
+    # JS (clean injection)
+    # ------------------------
+    html_parts.append(f"""
+<script>
+(function () {{
+    const page = document.querySelector(".page");
+    const selectionBox = document.getElementById("selection-box");
+    const SCALE = {scale};
 
-        function getTextDivFromEvent(event) {
-          const target = event.target;
-          if (!(target instanceof Element)) return null;
-          const textDiv = target.closest('div.text[category="text"]');
-          return textDiv;
-        }
+    let startX = 0;
+    let startY = 0;
+    let isSelecting = false;
+    let selection = null;
 
-        function getSelectedTextDivIds(selection) {
-          if (!selection || selection.rangeCount === 0) return [];
+    page.addEventListener("mousedown", (e) => {{
+        const rect = page.getBoundingClientRect();
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+        isSelecting = true;
 
-          const range = selection.getRangeAt(0);
-          const textDivs = Array.from(
-            page.querySelectorAll('div.text[category="text"]')
-          );
+        selectionBox.style.left = startX + "px";
+        selectionBox.style.top = startY + "px";
+        selectionBox.style.width = "0px";
+        selectionBox.style.height = "0px";
+        selectionBox.style.display = "block";
+    }});
 
-          return textDivs
-            .filter(function (div) {
-              try {
-                return range.intersectsNode(div);
-              } catch (error) {
-                return false;
-              }
-            })
-            .map(function (div) {
-              return div.id;
-            });
-        }
+    page.addEventListener("mousemove", (e) => {{
+        if (!isSelecting) return;
 
-        page.addEventListener("mousedown", function (event) {
-          const textDiv = getTextDivFromEvent(event);
-          mouseDownDivId = textDiv ? textDiv.id : null;
+        const rect = page.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
 
-          const rect = page.getBoundingClientRect();
-          startX = event.clientX - rect.left;
-          startY = event.clientY - rect.top;
-          isSelecting = true;
+        const w = x - startX;
+        const h = y - startY;
 
-          selectionBox.style.left = startX + "px";
-          selectionBox.style.top = startY + "px";
-          selectionBox.style.width = "0px";
-          selectionBox.style.height = "0px";
-          selectionBox.style.display = "block";
-        });
+        selectionBox.style.width = Math.abs(w) + "px";
+        selectionBox.style.height = Math.abs(h) + "px";
+        selectionBox.style.left = (w < 0 ? x : startX) + "px";
+        selectionBox.style.top = (h < 0 ? y : startY) + "px";
+    }});
 
-        page.addEventListener("mousemove", function (event) {
-          if (!isSelecting) return;
+    page.addEventListener("mouseup", () => {{
+        isSelecting = false;
 
-          const rect = page.getBoundingClientRect();
-          const x = event.clientX - rect.left;
-          const y = event.clientY - rect.top;
+        const box = selectionBox.getBoundingClientRect();
+        const pageRect = page.getBoundingClientRect();
 
-          const w = x - startX;
-          const h = y - startY;
+        selection = {{
+            x0: box.left - pageRect.left,
+            y0: box.top - pageRect.top,
+            x1: box.right - pageRect.left,
+            y1: box.bottom - pageRect.top
+        }};
 
-          selectionBox.style.width = Math.abs(w) + "px";
-          selectionBox.style.height = Math.abs(h) + "px";
-          selectionBox.style.left = (w < 0 ? x : startX) + "px";
-          selectionBox.style.top = (h < 0 ? y : startY) + "px";
-        });
+        filterElements();
+    }});
 
-        page.addEventListener("mouseup", function (event) {
-          isSelecting = false;
+    function intersects(a, b) {{
+        return !(
+            a.right < b.x0 ||
+            a.left > b.x1 ||
+            a.bottom < b.y0 ||
+            a.top > b.y1
+        );
+    }}
 
-          const textDiv = getTextDivFromEvent(event);
-          const mouseUpDivId = textDiv ? textDiv.id : null;
-          const browserSelection = window.getSelection();
-          const selectedText = browserSelection ? browserSelection.toString().trim() : "";
-          const selectedDivIds = getSelectedTextDivIds(browserSelection);
+    function filterElements() {{
+        if (!selection) return;
 
-          const box = selectionBox.getBoundingClientRect();
-          const pageRect = page.getBoundingClientRect();
-          if (box.width > 0 && box.height > 0) {
-            selection = {
-              x0: box.left - pageRect.left,
-              y0: box.top - pageRect.top,
-              x1: box.right - pageRect.left,
-              y1: box.bottom - pageRect.top,
-            };
-            filterElements();
-          }
+        const pageRect = page.getBoundingClientRect();
 
-          const allDivIds = [];
-          if (mouseDownDivId) allDivIds.push(mouseDownDivId);
-          if (mouseUpDivId) allDivIds.push(mouseUpDivId);
-          selectedDivIds.forEach(function (id) {
-            if (!allDivIds.includes(id)) {
-              allDivIds.push(id);
-            }
-          });
-
-          const record = {
-            divIds: allDivIds,
-            selectedTexts: selectedText ? [selectedText] : [],
-          };
-          selectionRecords.push(record);
-
-          console.log("selection:", record);
-        });
-
-        function intersects(elBox, sel) {
-          return !(
-            elBox.right < sel.x0 ||
-            elBox.left > sel.x1 ||
-            elBox.bottom < sel.y0 ||
-            elBox.top > sel.y1
-          );
-        }
-
-        function filterElements() {
-          if (!selection) return;
-
-          const pageRect = page.getBoundingClientRect();
-          const elements = page.querySelectorAll(".text, .image, .vector-layer");
-
-          elements.forEach(function (el) {
+        document.querySelectorAll(".text, .image").forEach(el => {{
             const r = el.getBoundingClientRect();
-            const elBox = {
-              left: r.left - pageRect.left,
-              right: r.right - pageRect.left,
-              top: r.top - pageRect.top,
-              bottom: r.bottom - pageRect.top,
-            };
+            const box = {{
+                left: r.left - pageRect.left,
+                right: r.right - pageRect.left,
+                top: r.top - pageRect.top,
+                bottom: r.bottom - pageRect.top
+            }};
 
-            if (intersects(elBox, selection)) {
-              el.classList.remove("hidden");
-            } else {
-              el.classList.add("hidden");
-            }
-          });
-        }
+            el.classList.toggle("hidden", !intersects(box, selection));
+        }});
 
-        document.addEventListener("keydown", function (event) {
-          if (event.key !== "r") return;
+        document.querySelectorAll("svg.vector-layer path").forEach(p => {{
+            const box = {{
+                left: parseFloat(p.dataset.x0) * SCALE,
+                right: parseFloat(p.dataset.x1) * SCALE,
+                top: parseFloat(p.dataset.y0) * SCALE,
+                bottom: parseFloat(p.dataset.y1) * SCALE
+            }};
 
-          document.querySelectorAll(".hidden").forEach(function (el) {
-            el.classList.remove("hidden");
-          });
-          selectionBox.style.display = "none";
-          selection = null;
-        });
+            p.style.display = intersects(box, selection) ? "" : "none";
+        }});
+    }}
 
-        window.selectionRecords = selectionRecords;
-      })();
-    </script>
-    </body>
-    </html>
-    """)
+    document.addEventListener("keydown", (e) => {{
+        if (e.key !== "r") return;
 
-    with open(out_file, "w") as f:
+        document.querySelectorAll(".hidden").forEach(el => el.classList.remove("hidden"));
+        document.querySelectorAll("svg.vector-layer path").forEach(p => p.style.display = "");
+        selectionBox.style.display = "none";
+        selection = null;
+    }});
+}})();
+</script>
+</body>
+</html>
+""")
+
+    with open(out_file, "w", encoding="utf-8") as f:
         f.write("\n".join(html_parts))
 
     print(f"Saved → {out_file}")
+
 # ------------------------
 # MAIN
 # ------------------------
