@@ -159,6 +159,38 @@ def build_selection_js(scale, initial_area=None):
         }});
     }}
 
+    function collectTextTargetsForPick(e) {{
+        const selection = window.getSelection ? window.getSelection() : null;
+        const selectedTargets = [];
+        const selectedTargetIds = new Set();
+
+        if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {{
+            const textNodes = Array.from(document.querySelectorAll(".text"));
+            for (let i = 0; i < selection.rangeCount; i += 1) {{
+                const range = selection.getRangeAt(i);
+                textNodes.forEach((el) => {{
+                    if (selectedTargetIds.has(el.id)) return;
+                    if (range.intersectsNode(el)) {{
+                        selectedTargetIds.add(el.id);
+                        selectedTargets.push(el);
+                    }}
+                }});
+            }}
+        }}
+
+        if (selectedTargets.length > 0) {{
+            return selectedTargets;
+        }}
+
+        return Array.from(
+            new Set(
+                (document.elementsFromPoint(e.clientX, e.clientY) || [])
+                    .map((el) => el.closest(".text"))
+                    .filter(Boolean)
+            )
+        );
+    }}
+
     page.addEventListener("mouseup", () => {{
         if (mode !== "area" || !isSelecting) return;
         isSelecting = false;
@@ -208,34 +240,36 @@ def build_selection_js(scale, initial_area=None):
     page.addEventListener("click", (e) => {{
         if (mode !== "text") return;
 
-        const target = e.target.closest(".text");
-        if (!target) return;
+        const targets = collectTextTargetsForPick(e);
+        if (targets.length === 0) return;
 
-        const wasRemembered = rememberedTextIds.has(target.id);
-        if (wasRemembered) {{
-            rememberedTextIds.delete(target.id);
-        }} else {{
-            rememberedTextIds.add(target.id);
-        }}
+        targets.forEach((target) => {{
+            const wasRemembered = rememberedTextIds.has(target.id);
+            if (wasRemembered) {{
+                rememberedTextIds.delete(target.id);
+            }} else {{
+                rememberedTextIds.add(target.id);
+            }}
+
+            if (wasRemembered) {{
+                const removedEntry = currentPickedTextByElementId.get(target.id);
+                if (removedEntry) {{
+                    currentPickedTextItem = currentPickedTextItem.filter((entry) => entry.id !== removedEntry.id);
+                }}
+                currentPickedTextByElementId.delete(target.id);
+            }} else {{
+                const text = target.innerText.trim();
+                if (text) {{
+                    const entry = {{
+                        id: target.id,
+                        text: text
+                    }};
+                    currentPickedTextByElementId.set(target.id, entry);
+                    currentPickedTextItem.push(entry);
+                }}
+            }}
+        }});
         syncRememberedHighlights();
-
-        if (wasRemembered) {{
-            const removedEntry = currentPickedTextByElementId.get(target.id);
-            if (removedEntry) {{
-                currentPickedTextItem = currentPickedTextItem.filter((entry) => entry.id !== removedEntry.id);
-            }}
-            currentPickedTextByElementId.delete(target.id);
-        }} else {{
-            const text = target.innerText.trim();
-            if (text) {{
-                const entry = {{
-                    id: target.id,
-                    text: text
-                }};
-                currentPickedTextByElementId.set(target.id, entry);
-                currentPickedTextItem.push(entry);
-            }}
-        }}
         logPickedTextItems();
     }});
 

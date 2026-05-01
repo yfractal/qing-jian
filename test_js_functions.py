@@ -13,6 +13,12 @@ class BuildSelectionJsHighlightTests(unittest.TestCase):
         js = build_selection_js(1.5)
         self.assertIn("rememberedTextIds.delete(target.id);", js)
         self.assertIn("rememberedTextIds.add(target.id);", js)
+        self.assertIn("function collectTextTargetsForPick(e)", js)
+        self.assertIn("window.getSelection ? window.getSelection() : null", js)
+        self.assertIn("range.intersectsNode(el)", js)
+        self.assertIn("document.elementsFromPoint(e.clientX, e.clientY)", js)
+        self.assertIn("const targets = collectTextTargetsForPick(e);", js)
+        self.assertIn("targets.forEach((target) => {", js)
         self.assertIn("syncRememberedHighlights();", js)
 
     def test_js_logs_grouped_picked_text_items(self):
