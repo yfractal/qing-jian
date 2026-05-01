@@ -1,4 +1,8 @@
-def build_selection_js(scale):
+import json
+
+
+def build_selection_js(scale, initial_area=None):
+    initial_area_json = json.dumps(initial_area) if initial_area else "null"
     return f"""
 (function () {{
     const btnPickArea = document.getElementById("btn-pick-area");
@@ -6,6 +10,7 @@ def build_selection_js(scale):
     const page = document.querySelector(".page");
     const selectionBox = document.getElementById("selection-box");
     const SCALE = {scale};
+    const INITIAL_AREA_PDF = {initial_area_json};
 
     let mode = null;
     let startX = 0;
@@ -61,6 +66,50 @@ def build_selection_js(scale):
         selectionBox.style.top = (h < 0 ? y : startY) + "px";
     }});
 
+    function intersects(a, b) {{
+        return !(
+            a.right < b.x0 ||
+            a.left > b.x1 ||
+            a.bottom < b.y0 ||
+            a.top > b.y1
+        );
+    }}
+
+    function toPdfArea(area) {{
+        return {{
+            x0: area.x0 / SCALE,
+            y0: area.y0 / SCALE,
+            x1: area.x1 / SCALE,
+            y1: area.y1 / SCALE
+        }};
+    }}
+
+    function applySelection(area) {{
+        currentSelection = area;
+        selectionBox.style.left = area.x0 + "px";
+        selectionBox.style.top = area.y0 + "px";
+        selectionBox.style.width = Math.max(0, area.x1 - area.x0) + "px";
+        selectionBox.style.height = Math.max(0, area.y1 - area.y0) + "px";
+        selectionBox.style.display = "block";
+        filterElements(currentSelection);
+    }}
+
+    function emitSelection(area) {{
+        const pdfArea = toPdfArea(area);
+        console.log("Selected area (screen coords):", area);
+        console.log("Selected area (PDF coords):", pdfArea);
+        if (window.parent && window.parent !== window) {{
+            window.parent.postMessage(
+                {{
+                    type: "pdf-area-selected",
+                    area: area,
+                    pdfArea: pdfArea
+                }},
+                "*"
+            );
+        }}
+    }}
+
     page.addEventListener("mouseup", () => {{
         if (mode !== "area" || !isSelecting) return;
         isSelecting = false;
@@ -74,25 +123,9 @@ def build_selection_js(scale):
             y1: box.bottom - pageRect.top
         }};
 
-        console.log("Selected area (screen coords):", area);
-        console.log("Selected area (PDF coords):", {{
-            x0: area.x0 / SCALE,
-            y0: area.y0 / SCALE,
-            x1: area.x1 / SCALE,
-            y1: area.y1 / SCALE
-        }});
-        currentSelection = area;
-        filterElements(currentSelection);
+        applySelection(area);
+        emitSelection(area);
     }});
-
-    function intersects(a, b) {{
-        return !(
-            a.right < b.x0 ||
-            a.left > b.x1 ||
-            a.bottom < b.y0 ||
-            a.top > b.y1
-        );
-    }}
 
     function filterElements(selection) {{
         if (!selection) return;
@@ -158,5 +191,14 @@ def build_selection_js(scale):
     }});
 
     setMode("area");
+    if (INITIAL_AREA_PDF) {{
+        const initialArea = {{
+            x0: INITIAL_AREA_PDF.x0 * SCALE,
+            y0: INITIAL_AREA_PDF.y0 * SCALE,
+            x1: INITIAL_AREA_PDF.x1 * SCALE,
+            y1: INITIAL_AREA_PDF.y1 * SCALE
+        }};
+        applySelection(initialArea);
+    }}
 }})();
 """

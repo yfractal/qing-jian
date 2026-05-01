@@ -6,7 +6,28 @@ from js_functions import build_selection_js
 from layout_extractor import extract_layout, fmt_num
 
 
-def render_html(layout, width, height, out_file="page.html", scale=1.5):
+def parse_area(area_raw):
+    if not area_raw:
+        return None
+
+    parts = [p.strip() for p in area_raw.split(",")]
+    if len(parts) != 4:
+        raise ValueError("Area must contain 4 comma-separated numbers: x0,y0,x1,y1")
+
+    try:
+        x0, y0, x1, y1 = [float(v) for v in parts]
+    except ValueError as exc:
+        raise ValueError("Area values must be valid numbers") from exc
+
+    return {
+        "x0": min(x0, x1),
+        "y0": min(y0, y1),
+        "x1": max(x0, x1),
+        "y1": max(y0, y1),
+    }
+
+
+def render_html(layout, width, height, out_file="page.html", scale=1.5, area=None):
     def s(v): return v * scale
 
     html_parts = []
@@ -183,7 +204,7 @@ body {{ background:#eee; }}
 
     html_parts.append(f"""
 <script>
-{build_selection_js(scale)}
+{build_selection_js(scale, area)}
 </script>
 </body>
 </html>
@@ -205,10 +226,16 @@ def parse_args():
         default="output",
         help="Directory to store extracted images",
     )
+    parser.add_argument(
+        "--area",
+        default=None,
+        help="Initial PDF area as x0,y0,x1,y1",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
     layout, width, height = extract_layout(args.pdf_path, args.page, args.output_dir)
-    render_html(layout, width, height, out_file=args.out, scale=args.scale)
+    area = parse_area(args.area)
+    render_html(layout, width, height, out_file=args.out, scale=args.scale, area=area)
