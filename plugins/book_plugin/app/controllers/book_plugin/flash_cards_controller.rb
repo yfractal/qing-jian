@@ -3,7 +3,14 @@ module BookPlugin
     before_action :set_book
 
     def new
-      @page_number = params[:page_number].presence&.to_i
+      @page_number, invalid_page_number = parse_page_number(params[:page_number])
+      if invalid_page_number
+        @flash_card = @book.flash_cards.new
+        flash.now[:alert] = "Page number must be an integer greater than or equal to 1."
+        render :new, status: :unprocessable_entity
+        return
+      end
+
       @book_html = find_or_create_book_html(@page_number) if @page_number
       if @page_number && @book_html.nil?
         @flash_card = @book.flash_cards.new
@@ -62,6 +69,17 @@ module BookPlugin
 
     def flash_card_params
       params.require(:flash_card).permit(:book_html_id)
+    end
+
+    def parse_page_number(raw_value)
+      return [nil, false] if raw_value.blank?
+
+      parsed_value = raw_value.is_a?(String) ? Integer(raw_value, 10) : Integer(raw_value)
+      return [nil, true] if parsed_value < 1
+
+      [parsed_value, false]
+    rescue ArgumentError, TypeError
+      [nil, true]
     end
 
     def parse_areas_to_show(raw_value)

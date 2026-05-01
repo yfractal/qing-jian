@@ -13,6 +13,9 @@ module BookPlugin
 
     class << self
       def call(pdf_path:, page_number:, timeout_seconds: DEFAULT_TIMEOUT_SECONDS)
+        normalized_page_number = normalize_page_number(page_number)
+        return failure("Page number must be an integer greater than or equal to 1") unless normalized_page_number
+
         Tempfile.create(["book-plugin-page", ".html"]) do |tmp_html|
           tmp_html_path = tmp_html.path
           tmp_html.close
@@ -22,7 +25,7 @@ module BookPlugin
             extractor_script_path,
             pdf_path.to_s,
             "--page",
-            (page_number.to_i - 1).to_s,
+            (normalized_page_number - 1).to_s,
             "--out",
             tmp_html_path
           ]
@@ -81,6 +84,15 @@ module BookPlugin
 
       def failure(message)
         Result.new(html: nil, error_message: message)
+      end
+
+      def normalize_page_number(page_number)
+        parsed_value = page_number.is_a?(String) ? Integer(page_number, 10) : Integer(page_number)
+        return nil if parsed_value < 1
+
+        parsed_value
+      rescue ArgumentError, TypeError
+        nil
       end
 
       def build_process_failure_message(status:, stderr:)

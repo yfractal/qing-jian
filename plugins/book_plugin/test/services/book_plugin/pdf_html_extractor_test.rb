@@ -164,6 +164,26 @@ module BookPlugin
       end
     end
 
+    test "returns error for non numeric page number" do
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, ->(**) { raise "execute_command should not run for invalid page number" }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: "abc")
+
+        refute_predicate result, :success?
+        assert_nil result.html
+        assert_match(/page number must be an integer greater than or equal to 1/i, result.error_message)
+      end
+    end
+
+    test "returns error for non positive page number" do
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, ->(**) { raise "execute_command should not run for invalid page number" }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 0)
+
+        refute_predicate result, :success?
+        assert_nil result.html
+        assert_match(/page number must be an integer greater than or equal to 1/i, result.error_message)
+      end
+    end
+
     private
 
     def option_value(command, flag)

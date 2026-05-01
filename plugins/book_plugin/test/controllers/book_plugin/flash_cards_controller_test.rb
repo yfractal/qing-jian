@@ -82,6 +82,34 @@ module BookPlugin
       assert_select "input[name='page_number']"
     end
 
+    test "new with non numeric page number shows validation alert without extraction" do
+      book = create_book_with_pdf
+
+      with_singleton_stub(PdfHtmlExtractor, :call, ->(**) { raise "extractor should not be called for invalid page number" }) do
+        assert_no_difference("BookHtml.count") do
+          get "/books/books/#{book.id}/flash_cards/new", params: { page_number: "abc" }
+        end
+      end
+
+      assert_response :unprocessable_entity
+      assert_includes @response.body, "Page number must be an integer greater than or equal to 1."
+      assert_select "input[name='page_number']"
+    end
+
+    test "new with zero page number shows validation alert without extraction" do
+      book = create_book_with_pdf
+
+      with_singleton_stub(PdfHtmlExtractor, :call, ->(**) { raise "extractor should not be called for invalid page number" }) do
+        assert_no_difference("BookHtml.count") do
+          get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 0 }
+        end
+      end
+
+      assert_response :unprocessable_entity
+      assert_includes @response.body, "Page number must be an integer greater than or equal to 1."
+      assert_select "input[name='page_number']"
+    end
+
     test "new with page number reuses just-created row under uniqueness contention" do
       book = create_book_with_pdf
 
