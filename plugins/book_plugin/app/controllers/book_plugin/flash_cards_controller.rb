@@ -58,10 +58,14 @@ module BookPlugin
     end
 
     def extract_page_html(page_number)
+      unless page_number.is_a?(Integer) && page_number >= 1
+        return PdfHtmlExtractor::Result.new(html: nil, error_message: "Page number must be an integer greater than or equal to 1")
+      end
+
       return PdfHtmlExtractor::Result.new(html: nil, error_message: "Book file is not attached") unless @book.file.attached?
 
       @book.file.blob.open do |tempfile|
-        PdfHtmlExtractor.call(pdf_path: tempfile.path, page_number:)
+        PdfHtmlExtractor.call(pdf_path: tempfile.path, page_number: page_number)
       end
     rescue StandardError => e
       PdfHtmlExtractor::Result.new(html: nil, error_message: e.message)
