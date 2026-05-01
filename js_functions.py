@@ -21,7 +21,6 @@ def build_selection_js(scale, initial_area=None):
     const pickedTextItems = [];
     let currentPickedTextItem = [];
     const currentPickedTextByElementId = new Map();
-    let nextPickedTextId = 1;
 
     function setMode(nextMode) {{
         mode = nextMode;
@@ -230,7 +229,7 @@ def build_selection_js(scale, initial_area=None):
             const text = target.innerText.trim();
             if (text) {{
                 const entry = {{
-                    id: nextPickedTextId++,
+                    id: target.id,
                     text: text
                 }};
                 currentPickedTextByElementId.set(target.id, entry);

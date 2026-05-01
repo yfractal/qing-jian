@@ -24,7 +24,7 @@ class BuildSelectionJsHighlightTests(unittest.TestCase):
         self.assertIn('type: "picked-text-items-updated",', js)
         self.assertIn("items: items", js)
         self.assertIn("window.parent.postMessage(", js)
-        self.assertIn("id: nextPickedTextId++,", js)
+        self.assertIn("id: target.id,", js)
         self.assertIn("text: text", js)
 
 
