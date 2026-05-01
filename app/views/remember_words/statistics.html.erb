@@ -58,18 +58,23 @@
       </p>
     </div>
 
-    <div class="statistics-heatmap-grid">
-      <% @heatmap_dates.each do |date| %>
-        <% count = @stats[:daily_review_counts][date] %>
-        <% level = RememberWordsStatistics.heat_level(count: count, max_count: @stats[:heatmap_max_count]) %>
-        <% cell_classes = ["statistics-heatmap-cell", "statistics-heatmap-level-#{level}"] %>
-        <% cell_classes << "statistics-heatmap-cell-active" if count.positive? %>
+    <div class="statistics-heatmap-scroll">
+      <div class="statistics-heatmap-grid">
+        <% @heatmap_dates.each do |date| %>
+          <% count = @stats[:daily_review_counts][date] %>
+          <% level = RememberWordsStatistics.heat_level(count: count, max_count: @stats[:heatmap_max_count]) %>
+          <% cell_classes = ["statistics-heatmap-cell", "statistics-heatmap-level-#{level}"] %>
+          <% cell_classes << "statistics-heatmap-cell-active" if count.positive? %>
+          <% tooltip = "#{date.iso8601}: #{count} reviews" %>
 
-        <span
-          class="<%= cell_classes.join(" ") %>"
-          title="<%= "#{date.iso8601}: #{count} reviews" %>">
-        </span>
-      <% end %>
+          <span
+            class="<%= cell_classes.join(" ") %>"
+            title="<%= tooltip %>"
+            data-tooltip="<%= tooltip %>"
+            aria-label="<%= tooltip %>">
+          </span>
+        <% end %>
+      </div>
     </div>
   </section>
 </main>

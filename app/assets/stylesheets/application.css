@@ -513,6 +513,7 @@ input[type="submit"].button-large {
   border-radius: 16px;
   padding: 1rem;
   background: #fff;
+  overflow: visible;
 }
 
 .statistics-heatmap-header {
@@ -539,13 +540,22 @@ input[type="submit"].button-large {
   gap: 0.25rem;
 }
 
+/* Horizontal scroll lives here; generous padding keeps CSS tooltips inside the scroll box. */
+.statistics-heatmap-scroll {
+  overflow-x: auto;
+  padding: 0 6rem 3rem 0.25rem;
+  margin-inline: -0.25rem;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
 .statistics-heatmap-grid {
   display: grid;
   grid-template-columns: repeat(53, 12px);
   grid-auto-flow: row;
   grid-template-rows: repeat(7, 12px);
   gap: 4px;
-  overflow-x: auto;
+  width: max-content;
 }
 
 .statistics-heatmap-cell {
@@ -554,6 +564,45 @@ input[type="submit"].button-large {
   border-radius: 3px;
   background: #ebedf0;
   box-sizing: border-box;
+  cursor: help;
+  position: relative;
+}
+
+.statistics-heatmap-grid .statistics-heatmap-cell:hover {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35);
+  z-index: 2;
+}
+
+/* Tooltip below the cell so it stays away from the header row and inside padded scroll area. */
+.statistics-heatmap-grid .statistics-heatmap-cell:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.95);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.22);
+}
+
+.statistics-heatmap-grid .statistics-heatmap-cell:hover::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 2px);
+  transform: translateX(-50%);
+  z-index: 21;
+  border: 6px solid transparent;
+  border-bottom-color: rgba(15, 23, 42, 0.95);
+  border-top-width: 0;
+  pointer-events: none;
 }
 
 .statistics-heatmap-level-0 {
