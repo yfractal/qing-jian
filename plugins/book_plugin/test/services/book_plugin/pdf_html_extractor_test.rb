@@ -2,6 +2,8 @@ require "test_helper"
 
 module BookPlugin
   class PdfHtmlExtractorTest < ActiveSupport::TestCase
+    StatusDouble = Struct.new(:success?, :exitstatus, :signaled?, :termsig, :exited?)
+
     def with_singleton_stub(target, method_name, replacement)
       eigenclass = class << target; self; end
       original_defined = target.respond_to?(method_name, true)
@@ -18,84 +20,157 @@ module BookPlugin
     end
 
     test "returns html on successful extraction" do
-      status = Struct.new(:exitstatus).new(0)
+      status = StatusDouble.new(true, 0, false, nil, true)
       command_args = nil
+      timeout_value = nil
+      option_lookup = ->(command, flag) { command[command.index(flag) + 1] }
 
-      with_singleton_stub(PdfHtmlExtractor, :with_timeout, ->(_seconds, &block) { block.call }) do
-        with_singleton_stub(PdfHtmlExtractor, :run_command, lambda { |*args|
-          command_args = args
-          out_path = args[args.index("--out") + 1]
-          File.write(out_path, "<article>Extracted</article>")
-          ["", "", status]
-        }) do
-          result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 5)
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
+        timeout_value = timeout_seconds
+        command_args = command
+        out_path = option_lookup.call(command, "--out")
+        File.write(out_path, "<article>Extracted</article>")
+        ["", "", status, false]
+      }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 5)
 
-          assert_predicate result, :success?
-          assert_equal "<article>Extracted</article>", result.html
-          assert_nil result.error_message
-          assert_equal "python3", command_args[0]
-          assert_equal "/tmp/book.pdf", command_args[2]
-          assert_equal "4", command_args[4]
-          assert_equal "--out", command_args[5]
-          refute_includes command_args, "--scale"
-          refute_includes command_args, "--output-dir"
-        end
+        assert_predicate result, :success?
+        assert_equal "<article>Extracted</article>", result.html
+        assert_nil result.error_message
+        assert_equal 30, timeout_value
+        assert_equal "python3", command_args[0]
+        assert_match(%r{/extract2\.py\z}, command_args[1])
+        assert_equal "/tmp/book.pdf", command_args[2]
+        assert_equal "4", option_value(command_args, "--page")
+        assert option_value(command_args, "--out").end_with?(".html")
+        refute_includes command_args, "--scale"
+        refute_includes command_args, "--output-dir"
       end
     end
 
     test "returns error when extractor exits non zero" do
-      status = Struct.new(:exitstatus).new(1)
+      status = StatusDouble.new(false, 1, false, nil, true)
+      command_args = nil
+      timeout_value = nil
 
-      with_singleton_stub(PdfHtmlExtractor, :with_timeout, ->(_seconds, &block) { block.call }) do
-        with_singleton_stub(PdfHtmlExtractor, :run_command, ->(*_args) { ["", "boom", status] }) do
-          result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 2)
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, ->(command:, timeout_seconds:) {
+        command_args = command
+        timeout_value = timeout_seconds
+        ["", "boom", status, false]
+      }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 2)
 
-          refute_predicate result, :success?
-          assert_nil result.html
-          assert_match(/exit code 1/, result.error_message)
-          assert_match(/boom/, result.error_message)
-        end
+        refute_predicate result, :success?
+        assert_nil result.html
+        assert_equal "/tmp/book.pdf", command_args[2]
+        assert_equal 30, timeout_value
+        assert_match(/exit status 1/, result.error_message)
+        assert_match(/boom/, result.error_message)
+      end
+    end
+
+    test "returns error when process exits by signal" do
+      status = StatusDouble.new(false, nil, true, 9, false)
+      command_args = nil
+      timeout_value = nil
+
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, ->(command:, timeout_seconds:) {
+        command_args = command
+        timeout_value = timeout_seconds
+        ["", "killed", status, false]
+      }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 9)
+
+        refute_predicate result, :success?
+        assert_nil result.html
+        assert_equal "/tmp/book.pdf", command_args[2]
+        assert_equal 30, timeout_value
+        assert_match(/signal 9/, result.error_message)
+        assert_match(/killed/, result.error_message)
       end
     end
 
     test "returns timeout error when extraction exceeds timeout" do
-      with_singleton_stub(PdfHtmlExtractor, :with_timeout, ->(_seconds, &_block) { raise Timeout::Error, "execution expired" }) do
+      timeout_status = StatusDouble.new(false, nil, true, 15, false)
+      command_args = nil
+      timeout_value = nil
+
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, ->(command:, timeout_seconds:) {
+        command_args = command
+        timeout_value = timeout_seconds
+        ["", "", timeout_status, true]
+      }) do
         result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 1)
 
         refute_predicate result, :success?
         assert_nil result.html
+        assert_equal "/tmp/book.pdf", command_args[2]
+        assert_equal 30, timeout_value
         assert_match(/timed out/i, result.error_message)
       end
     end
 
+    test "reaps process when execute_command times out" do
+      status = nil
+      timed_out = nil
+
+      _stdout, _stderr, status, timed_out = PdfHtmlExtractor.send(
+        :execute_command,
+        command: ["python3", "-c", "import time; time.sleep(5)"],
+        timeout_seconds: 0.1
+      )
+
+      assert_equal true, timed_out
+      refute_predicate status, :success?
+      assert_predicate status, :signaled?
+    end
+
     test "returns error when extractor output is empty" do
-      status = Struct.new(:exitstatus).new(0)
+      status = StatusDouble.new(true, 0, false, nil, true)
+      timeout_value = nil
+      option_lookup = ->(command, flag) { command[command.index(flag) + 1] }
 
-      with_singleton_stub(PdfHtmlExtractor, :with_timeout, ->(_seconds, &block) { block.call }) do
-        with_singleton_stub(PdfHtmlExtractor, :run_command, lambda { |*args|
-          out_path = args[args.index("--out") + 1]
-          File.write(out_path, " \n")
-          ["", "", status]
-        }) do
-          result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 3)
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
+        timeout_value = timeout_seconds
+        out_path = option_lookup.call(command, "--out")
+        File.write(out_path, " \n")
+        ["", "", status, false]
+      }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 3)
 
-          refute_predicate result, :success?
-          assert_nil result.html
-          assert_match(/empty html output/i, result.error_message)
-        end
+        refute_predicate result, :success?
+        assert_nil result.html
+        assert_equal 30, timeout_value
+        assert_match(/empty html output/i, result.error_message)
       end
     end
 
     test "returns error when unexpected exception happens" do
-      with_singleton_stub(PdfHtmlExtractor, :with_timeout, ->(_seconds, &block) { block.call }) do
-        with_singleton_stub(PdfHtmlExtractor, :run_command, ->(*_args) { raise StandardError, "kaboom" }) do
-          result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 7)
+      command_args = nil
+      timeout_value = nil
 
-          refute_predicate result, :success?
-          assert_nil result.html
-          assert_match(/kaboom/, result.error_message)
-        end
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, ->(command:, timeout_seconds:) {
+        command_args = command
+        timeout_value = timeout_seconds
+        raise StandardError, "kaboom"
+      }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 7)
+
+        refute_predicate result, :success?
+        assert_nil result.html
+        assert_equal "/tmp/book.pdf", command_args[2]
+        assert_equal 30, timeout_value
+        assert_match(/kaboom/, result.error_message)
       end
+    end
+
+    private
+
+    def option_value(command, flag)
+      index = command.index(flag)
+      return nil unless index
+
+      command[index + 1]
     end
   end
 end

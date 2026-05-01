@@ -1,7 +1,5 @@
 require "open3"
-require "pathname"
 require "tempfile"
-require "timeout"
 
 module BookPlugin
   class PdfHtmlExtractor
@@ -29,13 +27,11 @@ module BookPlugin
             tmp_html_path
           ]
 
-          _stdout, stderr, status = with_timeout(timeout_seconds) do
-            run_command(*command)
-          end
+          _stdout, stderr, status, timed_out = execute_command(command:, timeout_seconds:)
+          return failure("Extractor timed out") if timed_out
 
-          unless status.exitstatus.zero?
-            stderr_text = stderr.to_s.strip
-            return failure("Extractor failed with exit code #{status.exitstatus}: #{stderr_text}")
+          unless status.success?
+            return failure(build_process_failure_message(status:, stderr:))
           end
 
           html = File.exist?(tmp_html_path) ? File.read(tmp_html_path) : ""
@@ -43,24 +39,64 @@ module BookPlugin
 
           Result.new(html:, error_message: nil)
         end
-      rescue Timeout::Error
-        failure("Extractor timed out")
       rescue StandardError => e
         failure("Extractor failed: #{e.message}")
       end
 
-      def run_command(*args)
-        Open3.capture3(*args)
-      end
-
-      def with_timeout(seconds, &block)
-        Timeout.timeout(seconds, &block)
-      end
-
       private
+
+      def execute_command(command:, timeout_seconds:)
+        Open3.popen3(*command) do |stdin, stdout, stderr, wait_thr|
+          stdin.close
+
+          stdout_reader = Thread.new { stdout.read.to_s }
+          stderr_reader = Thread.new { stderr.read.to_s }
+
+          timed_out = wait_thr.join(timeout_seconds).nil?
+          terminate_and_reap(wait_thr) if timed_out
+
+          status = wait_thr.value
+          [stdout_reader.value, stderr_reader.value, status, timed_out]
+        ensure
+          stdout.close unless stdout.closed?
+          stderr.close unless stderr.closed?
+        end
+      end
+
+      def terminate_and_reap(wait_thr)
+        pid = wait_thr.pid
+        Process.kill("TERM", pid)
+      rescue Errno::ESRCH
+        nil
+      ensure
+        if wait_thr.join(0.2).nil?
+          begin
+            Process.kill("KILL", pid)
+          rescue Errno::ESRCH
+            nil
+          end
+          wait_thr.join
+        end
+      end
 
       def failure(message)
         Result.new(html: nil, error_message: message)
+      end
+
+      def build_process_failure_message(status:, stderr:)
+        diagnostic =
+          if status.signaled?
+            "terminated by signal #{status.termsig}"
+          elsif status.exited?
+            "failed with exit status #{status.exitstatus}"
+          else
+            "ended abnormally (#{status.inspect})"
+          end
+
+        stderr_text = stderr.to_s.strip
+        return "Extractor #{diagnostic}" if stderr_text.empty?
+
+        "Extractor #{diagnostic}: #{stderr_text}"
       end
 
       def extractor_script_path
