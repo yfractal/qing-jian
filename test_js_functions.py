@@ -15,11 +15,14 @@ class BuildSelectionJsHighlightTests(unittest.TestCase):
         self.assertIn("rememberedTextIds.add(target.id);", js)
         self.assertIn("syncRememberedHighlights();", js)
 
-    def test_js_derives_picked_texts_from_remembered_ids(self):
+    def test_js_logs_grouped_picked_text_items(self):
         js = build_selection_js(1.5)
-        self.assertIn("const pickedTexts = Array.from(rememberedTextIds)", js)
-        self.assertIn(".map((id) => document.getElementById(id))", js)
-        self.assertIn('console.log("Picked text items:", pickedTexts);', js)
+        self.assertIn("const pickedTextItems = [];", js)
+        self.assertIn("let currentPickedTextItem = [];", js)
+        self.assertIn("function startNewPickedTextItem()", js)
+        self.assertIn('console.log("Picked text items:", buildPickedTextItemsForLog());', js)
+        self.assertIn("id: nextPickedTextId++,", js)
+        self.assertIn("text: text", js)
 
 
 if __name__ == "__main__":

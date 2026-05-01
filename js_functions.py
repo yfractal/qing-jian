@@ -18,6 +18,10 @@ def build_selection_js(scale, initial_area=None):
     let isSelecting = false;
     let currentSelection = null;
     const rememberedTextIds = new Set();
+    const pickedTextItems = [];
+    let currentPickedTextItem = [];
+    const currentPickedTextByElementId = new Map();
+    let nextPickedTextId = 1;
 
     function setMode(nextMode) {{
         mode = nextMode;
@@ -31,8 +35,32 @@ def build_selection_js(scale, initial_area=None):
         setMode("area");
     }});
 
+    function buildPickedTextItemsForLog() {{
+        const items = pickedTextItems.map((item) => item.slice());
+        if (currentPickedTextItem.length > 0) {{
+            items.push(currentPickedTextItem.slice());
+        }}
+        return items;
+    }}
+
+    function logPickedTextItems() {{
+        console.log("Picked text items:", buildPickedTextItemsForLog());
+    }}
+
+    function startNewPickedTextItem() {{
+        if (currentPickedTextItem.length > 0) {{
+            pickedTextItems.push(currentPickedTextItem.slice());
+        }}
+        currentPickedTextItem = [];
+        currentPickedTextByElementId.clear();
+        rememberedTextIds.clear();
+        syncRememberedHighlights();
+        logPickedTextItems();
+    }}
+
     btnPickText.addEventListener("click", () => {{
         setMode("text");
+        startNewPickedTextItem();
     }});
 
     page.addEventListener("mousedown", (e) => {{
@@ -174,20 +202,32 @@ def build_selection_js(scale, initial_area=None):
         const target = e.target.closest(".text");
         if (!target) return;
 
-        if (rememberedTextIds.has(target.id)) {{
+        const wasRemembered = rememberedTextIds.has(target.id);
+        if (wasRemembered) {{
             rememberedTextIds.delete(target.id);
         }} else {{
             rememberedTextIds.add(target.id);
         }}
         syncRememberedHighlights();
 
-        const pickedTexts = Array.from(rememberedTextIds)
-            .map((id) => document.getElementById(id))
-            .filter(Boolean)
-            .map((el) => el.innerText.trim())
-            .filter(Boolean);
-
-        console.log("Picked text items:", pickedTexts);
+        if (wasRemembered) {{
+            const removedEntry = currentPickedTextByElementId.get(target.id);
+            if (removedEntry) {{
+                currentPickedTextItem = currentPickedTextItem.filter((entry) => entry.id !== removedEntry.id);
+            }}
+            currentPickedTextByElementId.delete(target.id);
+        }} else {{
+            const text = target.innerText.trim();
+            if (text) {{
+                const entry = {{
+                    id: nextPickedTextId++,
+                    text: text
+                }};
+                currentPickedTextByElementId.set(target.id, entry);
+                currentPickedTextItem.push(entry);
+            }}
+        }}
+        logPickedTextItems();
     }});
 
     document.addEventListener("keydown", (e) => {{
