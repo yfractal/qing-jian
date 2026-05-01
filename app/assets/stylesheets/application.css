@@ -523,6 +523,13 @@ input[type="submit"].button-large {
   margin-bottom: 0.75rem;
 }
 
+.statistics-heatmap-today {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
 .statistics-legend {
   margin: 0;
   color: #475569;
@@ -535,7 +542,7 @@ input[type="submit"].button-large {
 .statistics-heatmap-grid {
   display: grid;
   grid-template-columns: repeat(53, 12px);
-  grid-auto-flow: column;
+  grid-auto-flow: row;
   grid-template-rows: repeat(7, 12px);
   gap: 4px;
   overflow-x: auto;
@@ -546,6 +553,7 @@ input[type="submit"].button-large {
   height: 12px;
   border-radius: 3px;
   background: #ebedf0;
+  box-sizing: border-box;
 }
 
 .statistics-heatmap-level-0 {
@@ -566,6 +574,37 @@ input[type="submit"].button-large {
 
 .statistics-heatmap-level-4 {
   background: #196127;
+}
+
+.statistics-heatmap-cell-active {
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.18);
+}
+
+.statistics-heatmap-cell-today {
+  outline: 2px solid #0f172a;
+  outline-offset: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.42rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #0f172a;
+}
+
+.statistics-heatmap-today-count {
+  pointer-events: none;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statistics-heatmap-cell-today.statistics-heatmap-level-1,
+.statistics-heatmap-cell-today.statistics-heatmap-level-2,
+.statistics-heatmap-cell-today.statistics-heatmap-level-3,
+.statistics-heatmap-cell-today.statistics-heatmap-level-4 {
+  color: #fff;
 }
 
 @media (max-width: 640px) {

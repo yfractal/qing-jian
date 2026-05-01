@@ -8,6 +8,7 @@
       <p class="remember-progress-meta">
         Remembered <%= @stats[:remembered_words] %> / <%= @stats[:total_words] %>
         · Completion <%= @stats[:completion_rate_percent] %>%
+        · Today <%= @stats[:reviews_today] %> reviews
       </p>
     </div>
     <div class="remember-header-actions">
@@ -32,7 +33,7 @@
     <article class="statistics-summary-card">
       <p class="eyebrow">Review Volume</p>
       <p class="statistics-value"><%= @stats[:reviews_last_7_days] %></p>
-      <p class="statistics-label">Correct reviews in last 7 days</p>
+      <p class="statistics-label">Reviews in last 7 days</p>
     </article>
 
     <article class="statistics-summary-card">
@@ -42,9 +43,10 @@
     </article>
   </section>
 
-  <section class="statistics-heatmap" aria-label="Daily correct review heatmap">
+  <section class="statistics-heatmap" aria-label="Daily review heatmap">
     <div class="statistics-heatmap-header">
-      <p class="eyebrow">Last 365 Days</p>
+      <p class="eyebrow">Last <%= RememberWordsStatistics::HEATMAP_GRID_DAYS %> days</p>
+      <p class="statistics-heatmap-today">Today: <strong><%= @stats[:reviews_today] %></strong> reviews</p>
       <p class="statistics-legend">
         Less
         <span class="statistics-heatmap-cell statistics-heatmap-level-0" aria-hidden="true"></span>
@@ -60,9 +62,16 @@
       <% @heatmap_dates.each do |date| %>
         <% count = @stats[:daily_review_counts][date] %>
         <% level = RememberWordsStatistics.heat_level(count: count, max_count: @stats[:heatmap_max_count]) %>
+        <% cell_classes = ["statistics-heatmap-cell", "statistics-heatmap-level-#{level}"] %>
+        <% cell_classes << "statistics-heatmap-cell-active" if count.positive? %>
+        <% is_today = date == Date.current %>
+        <% cell_classes << "statistics-heatmap-cell-today" if is_today %>
         <span
-          class="statistics-heatmap-cell statistics-heatmap-level-<%= level %>"
-          title="<%= "#{date}: #{count} correct reviews" %>">
+          class="<%= cell_classes.join(" ") %>"
+          title="<%= "#{date.iso8601}: #{count} reviews" %>">
+          <% if is_today %>
+            <span class="statistics-heatmap-today-count" aria-hidden="true"><%= count %></span>
+          <% end %>
         </span>
       <% end %>
     </div>

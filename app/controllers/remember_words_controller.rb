@@ -18,7 +18,7 @@ class RememberWordsController < ApplicationController
       return
     end
 
-    @question = build_question(filtered_due_words.first)
+    @question = build_question(filtered_due_words.order(Arel.sql("RANDOM()")).first)
     @word_question_record = WordQuestionRecord.new(word_question: @question) if @question
   end
 
@@ -30,7 +30,7 @@ class RememberWordsController < ApplicationController
   end
 
   def statistics
-    @stats = RememberWordsStatistics.call(day: Date.current, days: 365)
+    @stats = RememberWordsStatistics.call(day: Date.current, days: RememberWordsStatistics::HEATMAP_GRID_DAYS)
     @heatmap_dates = @stats[:daily_review_counts].keys.sort
   end
 

@@ -3,6 +3,8 @@
 require "test_helper"
 
 class RememberWordsControllerTest < ActionDispatch::IntegrationTest
+  include ActiveSupport::Testing::TimeHelpers
+
   test "root renders remember words index" do
     get root_url
     assert_response :success
@@ -32,27 +34,29 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "progress includes remembered-today words after due_day advances" do
-    WordRecallState.update_all(due_day: Date.current + 100.days)
-    WordQuestionRecord.delete_all
-    remembered_word = create_due_word!("remembered_today")
-    still_due_word = create_due_word!("still_due_today")
-    remembered_question = create_question_for!(remembered_word)
-    create_question_for!(still_due_word)
+    travel_to Time.zone.local(2026, 5, 1, 12, 0, 0) do
+      WordRecallState.update_all(due_day: Date.current + 100.days)
+      WordQuestionRecord.delete_all
+      remembered_word = create_due_word!("remembered_today")
+      still_due_word = create_due_word!("still_due_today")
+      remembered_question = create_question_for!(remembered_word)
+      create_question_for!(still_due_word)
 
-    WordQuestionRecord.create!(
-      word_question: remembered_question,
-      picked_choice_token: "word:#{remembered_word.id}",
-      picked_choice_word: remembered_word.word,
-      is_correct: true,
-      created_at: Time.zone.now
-    )
+      WordQuestionRecord.create!(
+        word_question: remembered_question,
+        picked_choice_token: "word:#{remembered_word.id}",
+        picked_choice_word: remembered_word.word,
+        is_correct: true,
+        created_at: Time.zone.now
+      )
 
-    get root_url
+      get root_url
 
-    assert_response :success
-    assert_equal Date.current + 2.days, remembered_word.reload.word_recall_state.due_day
-    assert_select ".remember-progress-main", text: /Remembered 1 \/ 2/
-    assert_select ".remember-progress-meta", text: /Need to remember 1/
+      assert_response :success
+      assert_equal Date.current + 2.days, remembered_word.reload.word_recall_state.due_day
+      assert_select ".remember-progress-main", text: /Remembered 1 \/ 2/
+      assert_select ".remember-progress-meta", text: /Need to remember 1/
+    end
   end
 
   test "renders question form when question is available" do
@@ -342,12 +346,16 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "h1", "Statistics"
+    assert_match(/Today \d+ reviews/, @response.body)
     assert_select ".statistics-summary-card", minimum: 4
     assert_select ".statistics-heatmap"
     assert_select ".statistics-label", text: /remember_times >= 6/
-    assert_select ".statistics-label", text: /Correct reviews in last 7 days/
+    assert_select ".statistics-label", text: /Reviews in last 7 days/
     assert_select ".statistics-label", text: /Active review days in last 30 days/
-    assert_select ".statistics-heatmap-cell", minimum: 365
+    assert_select ".statistics-heatmap-cell", minimum: RememberWordsStatistics::HEATMAP_GRID_DAYS
+    assert_select ".statistics-heatmap-cell-today .statistics-heatmap-today-count", minimum: 1 do |elements|
+      assert_match(/\A\d+\z/, elements.first.text.strip)
+    end
   end
 
   private

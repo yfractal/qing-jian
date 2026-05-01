@@ -23,14 +23,15 @@ class RememberWordsStatisticsTest < ActiveSupport::TestCase
     assert_equal 2, stats[:total_words]
     assert_equal 1, stats[:remembered_words]
     assert_equal 50, stats[:completion_rate_percent]
+    assert_equal stats[:daily_review_counts][Date.current].to_i, stats[:reviews_today]
   end
 
-  test "builds daily correct-review heatmap counts and max count" do
+  test "builds daily review heatmap counts and max count" do
     word = create_word!("daily")
     question = create_question_for!(word)
 
-    2.times { create_correct_record!(question, created_at: Time.zone.local(2026, 4, 1, 10)) }
-    create_correct_record!(question, created_at: Time.zone.local(2026, 4, 2, 10))
+    2.times { create_record!(question, created_at: Time.zone.local(2026, 4, 1, 10), is_correct: true) }
+    create_record!(question, created_at: Time.zone.local(2026, 4, 2, 10), is_correct: false)
 
     stats = RememberWordsStatistics.call(day: Date.new(2026, 4, 2), days: 7)
 
@@ -43,13 +44,22 @@ class RememberWordsStatisticsTest < ActiveSupport::TestCase
     word = create_word!("trailing")
     question = create_question_for!(word)
 
-    create_correct_record!(question, created_at: Time.zone.local(2026, 4, 2, 9))
-    create_correct_record!(question, created_at: Time.zone.local(2026, 4, 3, 9))
+    create_record!(question, created_at: Time.zone.local(2026, 4, 2, 9), is_correct: true)
+    create_record!(question, created_at: Time.zone.local(2026, 4, 3, 9), is_correct: false)
 
     stats = RememberWordsStatistics.call(day: Date.new(2026, 4, 3), days: 30)
 
     assert_equal 2, stats[:reviews_last_7_days]
     assert_equal 2, stats[:active_days_last_30_days]
+  end
+
+  test "default heatmap spans full grid and ends on requested day" do
+    stats = RememberWordsStatistics.call(day: Date.new(2026, 6, 15))
+
+    assert_equal RememberWordsStatistics::HEATMAP_GRID_DAYS, stats[:daily_review_counts].size
+    assert_equal Date.new(2025, 6, 10), stats[:daily_review_counts].keys.min
+    assert_equal Date.new(2026, 6, 15), stats[:daily_review_counts].keys.max
+    assert_equal stats[:daily_review_counts][Date.new(2026, 6, 15)].to_i, stats[:reviews_today]
   end
 
   test "maps counts into heat levels" do
@@ -81,12 +91,12 @@ class RememberWordsStatisticsTest < ActiveSupport::TestCase
     question
   end
 
-  def create_correct_record!(question, created_at: Time.zone.now)
+  def create_record!(question, created_at: Time.zone.now, is_correct: true)
     WordQuestionRecord.create!(
       word_question: question,
-      picked_choice_token: "word:#{question.word_id}",
-      picked_choice_word: question.word.word,
-      is_correct: true,
+      picked_choice_token: is_correct ? "word:#{question.word_id}" : "similar_word:#{question.similar_words.first.id}",
+      picked_choice_word: is_correct ? question.word.word : question.similar_words.first.word,
+      is_correct: is_correct,
       created_at: created_at,
       updated_at: created_at
     )
