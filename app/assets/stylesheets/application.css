@@ -580,33 +580,6 @@ input[type="submit"].button-large {
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.18);
 }
 
-.statistics-heatmap-cell-today {
-  outline: 2px solid #0f172a;
-  outline-offset: 1px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.42rem;
-  font-weight: 800;
-  line-height: 1;
-  color: #0f172a;
-}
-
-.statistics-heatmap-today-count {
-  pointer-events: none;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.statistics-heatmap-cell-today.statistics-heatmap-level-1,
-.statistics-heatmap-cell-today.statistics-heatmap-level-2,
-.statistics-heatmap-cell-today.statistics-heatmap-level-3,
-.statistics-heatmap-cell-today.statistics-heatmap-level-4 {
-  color: #fff;
-}
-
 @media (max-width: 640px) {
   body {
     margin-top: 1rem;

@@ -2,7 +2,7 @@ class RememberWordsStatistics
   LEVEL_THRESHOLDS = [0.0, 0.25, 0.5, 0.75].freeze
 
   # GitHub-style grid: 53 columns × 7 rows so the last cell is the calendar end day.
-  HEATMAP_GRID_DAYS = 53 * 7
+  HEATMAP_GRID_DAYS = 53 * 7 - 1
 
   class << self
     def call(day: Date.current, days: HEATMAP_GRID_DAYS)

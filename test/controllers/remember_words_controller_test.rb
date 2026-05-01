@@ -353,9 +353,6 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".statistics-label", text: /Reviews in last 7 days/
     assert_select ".statistics-label", text: /Active review days in last 30 days/
     assert_select ".statistics-heatmap-cell", minimum: RememberWordsStatistics::HEATMAP_GRID_DAYS
-    assert_select ".statistics-heatmap-cell-today .statistics-heatmap-today-count", minimum: 1 do |elements|
-      assert_match(/\A\d+\z/, elements.first.text.strip)
-    end
   end
 
   private

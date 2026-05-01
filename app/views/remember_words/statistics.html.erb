@@ -64,14 +64,10 @@
         <% level = RememberWordsStatistics.heat_level(count: count, max_count: @stats[:heatmap_max_count]) %>
         <% cell_classes = ["statistics-heatmap-cell", "statistics-heatmap-level-#{level}"] %>
         <% cell_classes << "statistics-heatmap-cell-active" if count.positive? %>
-        <% is_today = date == Date.current %>
-        <% cell_classes << "statistics-heatmap-cell-today" if is_today %>
+
         <span
           class="<%= cell_classes.join(" ") %>"
           title="<%= "#{date.iso8601}: #{count} reviews" %>">
-          <% if is_today %>
-            <span class="statistics-heatmap-today-count" aria-hidden="true"><%= count %></span>
-          <% end %>
         </span>
       <% end %>
     </div>
