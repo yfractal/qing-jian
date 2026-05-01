@@ -1,5 +1,105 @@
 import fitz
+import html
 import os
+
+
+def fmt_num(value):
+    value = float(value)
+    if value.is_integer():
+        return str(int(value))
+    return f"{value:.4f}".rstrip("0").rstrip(".")
+
+
+def point_xy(point):
+    if hasattr(point, "x") and hasattr(point, "y"):
+        return point.x, point.y
+    return point[0], point[1]
+
+
+def rect_xy(rect):
+    if all(hasattr(rect, attr) for attr in ("x0", "y0", "x1", "y1")):
+        return rect.x0, rect.y0, rect.x1, rect.y1
+    return rect[0], rect[1], rect[2], rect[3]
+
+
+def color_to_css(color, default="none"):
+    if color is None:
+        return default
+
+    values = []
+    for component in color[:3]:
+        component = float(component)
+        if component <= 1:
+            component *= 255
+        values.append(max(0, min(255, round(component))))
+
+    return f"rgb({values[0]}, {values[1]}, {values[2]})"
+
+
+def path_d_for_item(item):
+    operator = item[0]
+
+    if operator == "l":
+        x0, y0 = point_xy(item[1])
+        x1, y1 = point_xy(item[2])
+        return f"M {fmt_num(x0)} {fmt_num(y0)} L {fmt_num(x1)} {fmt_num(y1)}"
+
+    if operator == "c":
+        x0, y0 = point_xy(item[1])
+        x1, y1 = point_xy(item[2])
+        x2, y2 = point_xy(item[3])
+        x3, y3 = point_xy(item[4])
+        return (
+            f"M {fmt_num(x0)} {fmt_num(y0)} "
+            f"C {fmt_num(x1)} {fmt_num(y1)} "
+            f"{fmt_num(x2)} {fmt_num(y2)} "
+            f"{fmt_num(x3)} {fmt_num(y3)}"
+        )
+
+    if operator == "re":
+        x0, y0, x1, y1 = rect_xy(item[1])
+        return (
+            f"M {fmt_num(x0)} {fmt_num(y0)} "
+            f"L {fmt_num(x1)} {fmt_num(y0)} "
+            f"L {fmt_num(x1)} {fmt_num(y1)} "
+            f"L {fmt_num(x0)} {fmt_num(y1)} Z"
+        )
+
+    if operator == "qu":
+        quad = item[1]
+        points = [quad.ul, quad.ur, quad.lr, quad.ll]
+        coords = [point_xy(point) for point in points]
+        x0, y0 = coords[0]
+        commands = [f"M {fmt_num(x0)} {fmt_num(y0)}"]
+        commands.extend(
+            f"L {fmt_num(x)} {fmt_num(y)}"
+            for x, y in coords[1:]
+        )
+        commands.append("Z")
+        return " ".join(commands)
+
+    return None
+
+
+def drawing_to_svg_paths(drawing):
+    stroke = color_to_css(drawing.get("color"))
+    fill = color_to_css(drawing.get("fill"))
+    stroke_width = drawing.get("width") or 1
+
+    paths = []
+    for item in drawing.get("items", []):
+        path_d = path_d_for_item(item)
+        if not path_d:
+            continue
+
+        paths.append({
+            "d": path_d,
+            "stroke": stroke,
+            "stroke_width": stroke_width,
+            "fill": fill,
+        })
+
+    return paths
 
 
 def merge_rects(rects, threshold=5):
@@ -100,34 +200,20 @@ def extract_layout(pdf_path, page_number):
         img_index += 1
 
     # ------------------------
-    # VECTORS (cleaned)
+    # VECTORS
     # ------------------------
-    raw_rects = []
-
     for d in page.get_drawings():
         rect = d.get("rect")
-        if not rect:
+        paths = drawing_to_svg_paths(d)
+        if not rect or not paths:
             continue
 
         x0, y0, x1, y1 = rect
 
-        w = x1 - x0
-        h = y1 - y0
-
-        # filter tiny noise
-        if w < 5 or h < 5:
-            continue
-
-        raw_rects.append([x0, y0, x1, y1])
-
-    merged_rects = merge_rects(raw_rects)
-
-    for r in merged_rects:
-        x0, y0, x1, y1 = r
-
         layout.append({
             "type": "vector",
-            "bbox": [x0, y0, x1, y1]
+            "bbox": [x0, y0, x1, y1],
+            "paths": paths,
         })
 
     return layout, page.rect.width, page.rect.height
@@ -164,11 +250,15 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
             z-index: 1;
         }}
 
-        .vector {{
+        .vector-layer {{
             position:absolute;
-            border: 1px solid rgba(255,0,0,0.4);
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
             z-index: 2;
             pointer-events:none;
+            overflow: visible;
         }}
     </style>
     </head>
@@ -177,6 +267,7 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
     """)
 
     layout.sort(key=lambda x: (x["bbox"][1], x["bbox"][0]))
+    vector_paths = []
 
     for el in layout:
         x0, y0, x1, y1 = el["bbox"]
@@ -194,9 +285,10 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
             """)
 
         elif el["type"] == "image":
+            src = html.escape(el["file"], quote=True)
             html_parts.append(f"""
             <img class="image"
-                src="{el['file']}"
+                src="{src}"
                 style="
                     left:{s(x0)}px;
                     top:{s(y0)}px;
@@ -206,16 +298,28 @@ def render_html(layout, width, height, out_file="page.html", scale=1.5):
             """)
 
         elif el["type"] == "vector":
+            vector_paths.extend(el.get("paths", []))
+
+    if vector_paths:
+        html_parts.append(f"""
+            <svg class="vector-layer"
+                 viewBox="0 0 {width} {height}"
+                 preserveAspectRatio="none">
+        """)
+
+        for path in vector_paths:
+            d = html.escape(path["d"], quote=True)
+            stroke = html.escape(path.get("stroke", "none"), quote=True)
+            fill = html.escape(path.get("fill", "none"), quote=True)
+            stroke_width = path.get("stroke_width", 1)
             html_parts.append(f"""
-            <div class="vector"
-                style="
-                    left:{s(x0)}px;
-                    top:{s(y0)}px;
-                    width:{s(x1-x0)}px;
-                    height:{s(y1-y0)}px;
-                ">
-            </div>
+                <path d="{d}"
+                      stroke="{stroke}"
+                      stroke-width="{stroke_width}"
+                      fill="{fill}" />
             """)
+
+        html_parts.append("</svg>")
 
     html_parts.append("</div></body></html>")
 
