@@ -43,7 +43,11 @@ module BookPlugin
       extraction_result = extract_page_html(page_number)
       return nil unless extraction_result.success?
 
-      @book.book_htmls.create!(page_number:, html: extraction_result.html)
+      @book.book_htmls.create_or_find_by!(page_number:) do |book_html|
+        book_html.html = extraction_result.html
+      end
+    rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid
+      @book.book_htmls.find_by(page_number:)
     end
 
     def extract_page_html(page_number)

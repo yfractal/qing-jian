@@ -82,6 +82,25 @@ module BookPlugin
       assert_select "input[name='page_number']"
     end
 
+    test "new with page number reuses just-created row under uniqueness contention" do
+      book = create_book_with_pdf
+
+      with_singleton_stub(PdfHtmlExtractor, :call, lambda { |**|
+        BookHtml.create!(
+          book:,
+          page_number: 8,
+          html: "<article>Concurrent HTML for page 8</article>"
+        )
+        PdfHtmlExtractor::Result.new(html: "<article>Late extractor HTML</article>", error_message: nil)
+      }) do
+        get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 8 }
+      end
+
+      assert_response :success
+      assert_equal 1, BookHtml.where(book:, page_number: 8).count
+      assert_select "iframe.book-html-preview-frame[srcdoc*='Concurrent HTML for page 8']"
+    end
+
     test "create persists flash card" do
       book = Book.new(title: "Book")
       book.save!(validate: false)
