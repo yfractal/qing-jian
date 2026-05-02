@@ -35,8 +35,13 @@ module BookPlugin
           payload = parse_layout_json(stdout)
           return failure("Extractor produced invalid JSON output") unless payload
 
+          layout = payload.fetch("layout")
+          # Dir.mktmpdir deletes workdir when this block ends; layout JSON still points at
+          # files under workdir unless we read them now.
+          materialize_layout_images!(layout)
+
           Result.new(
-            layout: payload.fetch("layout"),
+            layout: layout,
             width: payload.fetch("width"),
             height: payload.fetch("height"),
             error_message: nil
@@ -53,6 +58,25 @@ module BookPlugin
         value if value.is_a?(Hash)
       rescue JSON::ParserError, TypeError
         nil
+      end
+
+      def materialize_layout_images!(layout)
+        return unless layout.is_a?(Array)
+
+        layout.each do |item|
+          next unless item.is_a?(Hash)
+          next unless item["type"] == "image"
+
+          path = item["file"]
+          next if path.blank?
+          next unless File.file?(path)
+
+          item["__pending_upload__"] = {
+            "filename" => File.basename(path),
+            "data" => File.binread(path)
+          }
+          item.delete("file")
+        end
       end
 
       def execute_command(command:, timeout_seconds:)
