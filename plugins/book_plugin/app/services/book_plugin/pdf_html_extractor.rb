@@ -1,9 +1,9 @@
 require "open3"
-require "tempfile"
+require "tmpdir"
 
 module BookPlugin
   class PdfHtmlExtractor
-    Result = Struct.new(:html, :error_message, keyword_init: true) do
+    Result = Struct.new(:html, :images, :error_message, keyword_init: true) do
       def success?
         error_message.nil?
       end
@@ -16,9 +16,8 @@ module BookPlugin
         normalized_page_number = normalize_page_number(page_number)
         return failure("Page number must be an integer greater than or equal to 1") unless normalized_page_number
 
-        Tempfile.create(["book-plugin-page", ".html"]) do |tmp_html|
-          tmp_html_path = tmp_html.path
-          tmp_html.close
+        Dir.mktmpdir("book-plugin-extract") do |workdir|
+          html_path = File.join(workdir, "page.html")
 
           command = [
             "python3",
@@ -29,7 +28,9 @@ module BookPlugin
             "--load-js",
             load_js ? "1" : "0",
             "--out",
-            tmp_html_path
+            html_path,
+            "--output-dir",
+            workdir
           ]
 
           _stdout, stderr, status, timed_out = execute_command(command:, timeout_seconds:)
@@ -39,16 +40,34 @@ module BookPlugin
             return failure(build_process_failure_message(status:, stderr:))
           end
 
-          html = File.exist?(tmp_html_path) ? File.read(tmp_html_path) : ""
+          html = File.exist?(html_path) ? File.read(html_path) : ""
           return failure("Extractor produced empty HTML output") if html.strip.empty?
 
-          Result.new(html:, error_message: nil)
+          images = build_images_payload(html, workdir)
+          Result.new(html:, images:, error_message: nil)
         end
       rescue StandardError => e
         failure("Extractor failed: #{e.message}")
       end
 
       private
+
+      def build_images_payload(html, workdir)
+        base = File.expand_path(workdir)
+        paths = []
+        html.scan(/<img[^>]+src=["']([^"']+)["']/i) do |m|
+          raw = m[0]
+          next if raw.start_with?("data:", "http://", "https://", "/rails/active_storage")
+
+          path = File.absolute_path(raw, workdir)
+          next unless path.start_with?(base + File::SEPARATOR) && File.file?(path)
+
+          paths << path
+        end
+        paths.uniq.map do |path|
+          { filename: File.basename(path), data: File.binread(path) }
+        end
+      end
 
       def execute_command(command:, timeout_seconds:)
         Open3.popen3(*command) do |stdin, stdout, stderr, wait_thr|
@@ -64,7 +83,7 @@ module BookPlugin
           [stdout_reader.value, stderr_reader.value, status, timed_out]
         ensure
           stdout.close unless stdout.closed?
-          stderr.close unless stderr.closed?
+          stderr.close unless stdout.closed?
         end
       end
 
@@ -85,7 +104,7 @@ module BookPlugin
       end
 
       def failure(message)
-        Result.new(html: nil, error_message: message)
+        Result.new(html: nil, images: [], error_message: message)
       end
 
       def normalize_page_number(page_number)
