@@ -1,5 +1,6 @@
+require "json"
 require "open3"
-require "tempfile"
+require "tmpdir"
 
 module BookPlugin
   class PdfHtmlExtractor
@@ -12,32 +13,42 @@ module BookPlugin
     DEFAULT_TIMEOUT_SECONDS = 30
 
     class << self
-      def call(pdf_path:, page_number:, timeout_seconds: DEFAULT_TIMEOUT_SECONDS)
+      def call(pdf_path:, page_number:, timeout_seconds: DEFAULT_TIMEOUT_SECONDS, scale: 1.5, area: nil)
         normalized_page_number = normalize_page_number(page_number)
         return failure("Page number must be an integer greater than or equal to 1") unless normalized_page_number
 
-        Tempfile.create(["book-plugin-page", ".html"]) do |tmp_html|
-          tmp_html_path = tmp_html.path
-          tmp_html.close
-
+        Dir.mktmpdir("book-plugin-layout-") do |output_dir|
           command = [
             "python3",
-            extractor_script_path,
+            layout_extractor_script_path,
             pdf_path.to_s,
             "--page",
             (normalized_page_number - 1).to_s,
-            "--out",
-            tmp_html_path
+            "--output-dir",
+            output_dir
           ]
 
-          _stdout, stderr, status, timed_out = execute_command(command:, timeout_seconds:)
+          stdout, stderr, status, timed_out = execute_command(command:, timeout_seconds:)
           return failure("Extractor timed out") if timed_out
 
           unless status.success?
             return failure(build_process_failure_message(status:, stderr:))
           end
 
-          html = File.exist?(tmp_html_path) ? File.read(tmp_html_path) : ""
+          payload = parse_layout_json(stdout)
+          return failure("Extractor produced invalid JSON output") unless payload
+
+          layout = payload.fetch("layout")
+          width = payload.fetch("width")
+          height = payload.fetch("height")
+
+          html = PdfPageHtmlRenderer.render(
+            layout: layout,
+            width: width,
+            height: height,
+            scale: scale,
+            area: area
+          )
           return failure("Extractor produced empty HTML output") if html.strip.empty?
 
           Result.new(html:, error_message: nil)
@@ -47,6 +58,15 @@ module BookPlugin
       end
 
       private
+
+      def parse_layout_json(raw)
+        val = JSON.parse(raw.to_s)
+        return val if val.is_a?(Hash)
+
+        nil
+      rescue JSON::ParserError, TypeError
+        nil
+      end
 
       def execute_command(command:, timeout_seconds:)
         Open3.popen3(*command) do |stdin, stdout, stderr, wait_thr|
@@ -111,9 +131,9 @@ module BookPlugin
         "Extractor #{diagnostic}: #{stderr_text}"
       end
 
-      def extractor_script_path
+      def layout_extractor_script_path
         repo_root = BookPlugin::Engine.root.join("..", "..").expand_path
-        repo_root.join("extract2.py").to_s
+        repo_root.join("pdf_layout_extract.py").to_s
       end
     end
   end
