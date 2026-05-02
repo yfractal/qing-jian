@@ -17,6 +17,44 @@ window.addEventListener("message", function(event) {
 
   const revealed = Number(event.data.revealed || 0);
   const total = Number(event.data.total || 0);
-  progress.textContent = total === 0 ? "No picked items to reveal." : "Revealed " + revealed + " / " + total;
+  progress.textContent = total === 0 ? "No items to reveal" : revealed + " / " + total;
   button.disabled = total === 0 || revealed >= total;
+});
+
+document.addEventListener("keydown", function(event) {
+  if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+  const tag = (event.target && event.target.tagName) || "";
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || event.target.isContentEditable) return;
+
+  const page = document.querySelector(".flash-card-remember-page");
+  if (!page) return;
+
+  if (event.code === "Space") {
+    const btn = document.querySelector("[data-flash-card-reveal-next]");
+    if (!btn || btn.disabled) return;
+    event.preventDefault();
+    btn.click();
+    return;
+  }
+
+  if (event.key === "1") {
+    const remembered = document.querySelector(
+      "form.answer-form button[name='flash_card_recall_record[is_correct]'][value='true']"
+    );
+    if (remembered && !remembered.disabled) {
+      event.preventDefault();
+      remembered.click();
+    }
+    return;
+  }
+
+  if (event.key === "2") {
+    const again = document.querySelector(
+      "form.answer-form button[name='flash_card_recall_record[is_correct]'][value='false']"
+    );
+    if (again && !again.disabled) {
+      event.preventDefault();
+      again.click();
+    }
+  }
 });
