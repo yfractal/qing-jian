@@ -337,15 +337,44 @@
         return true;
     }
 
-    if (INITIAL_AREA_PDF) {
-        setMode("area");
+    function bindRefilterWhenImagesLoad() {
+        document.querySelectorAll("img.image").forEach((img) => {
+            if (img.complete) return;
+            img.addEventListener(
+                "load",
+                () => {
+                    if (currentSelection) filterElements(currentSelection);
+                },
+                { once: true }
+            );
+        });
+    }
+
+    function scheduleInitialAreaSelectionFromPdf() {
         const initialArea = {
             x0: INITIAL_AREA_PDF.x0 * SCALE,
             y0: INITIAL_AREA_PDF.y0 * SCALE,
             x1: INITIAL_AREA_PDF.x1 * SCALE,
             y1: INITIAL_AREA_PDF.y1 * SCALE
         };
-        applySelection(initialArea);
+        function run() {
+            applySelection(initialArea);
+            bindRefilterWhenImagesLoad();
+        }
+        if (document.readyState === "complete") {
+            requestAnimationFrame(run);
+        } else {
+            window.addEventListener(
+                "load",
+                () => requestAnimationFrame(run),
+                { once: true }
+            );
+        }
+    }
+
+    if (INITIAL_AREA_PDF) {
+        setMode("area");
+        scheduleInitialAreaSelectionFromPdf();
     } else {
         setMode("text");
     }
