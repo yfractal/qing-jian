@@ -4,6 +4,11 @@ class RememberWordsStatistics
   # GitHub-style grid: 53 columns × 7 rows so the last cell is the calendar end day.
   HEATMAP_GRID_DAYS = 53 * 7 - 1
 
+  def self.year_to_date_days(day)
+    d = day.to_date
+    (d - d.beginning_of_year).to_i + 1
+  end
+
   class << self
     def call(day: Date.current, days: HEATMAP_GRID_DAYS)
       end_day = day.to_date
