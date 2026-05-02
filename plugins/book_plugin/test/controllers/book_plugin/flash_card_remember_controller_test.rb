@@ -12,6 +12,13 @@ module BookPlugin
       assert_select "h1", "Remember Flash Cards"
       assert_select "iframe.flash-card-study-frame"
       assert_select "input[name='flash_card_recall_record[flash_card_id]'][value='#{card.id}']", visible: false
+      assert_select "section.recall-layout"
+      assert_select "aside.recall-sidebar"
+      assert_select "button[data-flash-card-reveal-next]", text: /Reveal next/i
+      assert_select "form.answer-form button[name='flash_card_recall_record[is_correct]'][value='true']",
+                    text: /I remembered/
+      assert_select "form.answer-form button[name='flash_card_recall_record[is_correct]'][value='false']",
+                    text: /Review again/
     end
 
     test "index excludes cards already reviewed in this pass" do
