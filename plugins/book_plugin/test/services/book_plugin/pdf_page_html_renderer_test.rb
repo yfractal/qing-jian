@@ -104,5 +104,27 @@ module BookPlugin
       assert_includes html, "img_19_0.png"
       refute_includes html, "active_storage_blob_id"
     end
+
+    test "embeds initial area and picked text groups in script" do
+      layout = [
+        { "type" => "text", "text" => "Alpha", "bbox" => [0, 0, 10, 10], "font_size" => 12 }
+      ]
+
+      html = PdfPageHtmlRenderer.render(
+        layout: layout,
+        width: 100,
+        height: 200,
+        scale: 2,
+        areas_to_show: { "x0" => 1, "y0" => 2, "x1" => 3, "y1" => 4, "extra" => "ignored" },
+        items_to_remember: [[{ "id" => "el-1", "text" => "Alpha" }]],
+        load_js: true
+      )
+
+      assert_includes html, '"x0":1'
+      assert_includes html, '"y0":2'
+      assert_includes html, "INITIAL_PICKED_TEXT_GROUPS"
+      assert_includes html, "el-1"
+      assert_includes html, "Alpha"
+    end
   end
 end
