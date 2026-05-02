@@ -179,6 +179,28 @@ module BookPlugin
       assert_redirected_to "/books/books/#{book.id}"
     end
 
+    test "index lists flash cards for book with edit link" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+      book_html = BookHtml.create!(book:, page_number: 2, layout: sample_layout("Page 2"))
+      card = FlashCard.create!(book:, book_html:, areas_to_show: {}, items_to_remember: [])
+
+      get "/books/books/#{book.id}/flash_cards"
+
+      assert_response :success
+      assert_select "a[href='/books/books/#{book.id}/flash_cards/#{card.id}/edit']", "Edit"
+    end
+
+    test "index shows empty message when book has no flash cards" do
+      book = Book.new(title: "Empty")
+      book.save!(validate: false)
+
+      get "/books/books/#{book.id}/flash_cards"
+
+      assert_response :success
+      assert_includes @response.body, "No flash cards yet"
+    end
+
     private
 
     def sample_layout(text = "Page text")

@@ -2,6 +2,10 @@ module BookPlugin
   class FlashCardsController < ApplicationController
     before_action :set_book
 
+    def index
+      @flash_cards = @book.flash_cards.includes(:book_html).order(created_at: :desc)
+    end
+
     def new
       @page_number, invalid_page_number = parse_page_number(params[:page_number])
       if invalid_page_number

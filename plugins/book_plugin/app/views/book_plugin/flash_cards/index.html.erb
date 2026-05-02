@@ -1,0 +1,31 @@
+<% content_for :title, "Flash Cards · #{@book.title}" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "book_plugin/books", "data-turbo-track": "reload" %>
+<% end %>
+
+<main class="remember-page books-page">
+  <header class="remember-header">
+    <div>
+      <p class="eyebrow">Flash Cards</p>
+      <h1><%= @book.title %></h1>
+    </div>
+    <div class="remember-header-actions">
+      <%= link_to "Back to book", book_path(@book), class: "button button-secondary" %>
+      <%= link_to "Create flash card", new_book_flash_card_path(@book), class: "button button-primary" %>
+    </div>
+  </header>
+
+  <% if @flash_cards.any? %>
+    <ul class="book-card">
+      <% @flash_cards.each do |card| %>
+        <li style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+          <span>Page <%= card.book_html.page_number %></span>
+          <%= link_to "Edit", edit_book_flash_card_path(@book, card), class: "button button-secondary" %>
+          <%= button_to "Delete", book_flash_card_path(@book, card), method: :delete, class: "button button-danger", form: { data: { turbo_confirm: "Delete this flash card?" } } %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="book-card">No flash cards yet. <%= link_to "Create one", new_book_flash_card_path(@book) %>.</p>
+  <% end %>
+</main>
