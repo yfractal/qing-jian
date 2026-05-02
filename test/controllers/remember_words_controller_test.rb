@@ -352,8 +352,10 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".statistics-label", text: /remember_times >= 6/
     assert_select ".statistics-label", text: /Reviews in last 7 days/
     assert_select ".statistics-label", text: /Active review days in last 30 days/
-    assert_select ".statistics-heatmap-cell", minimum: RememberWordsStatistics::HEATMAP_GRID_DAYS
-    assert_select ".statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]", minimum: RememberWordsStatistics::HEATMAP_GRID_DAYS
+    ytd = RememberWordsStatistics.year_to_date_days(Date.current)
+    assert_select ".statistics-heatmap-cell", minimum: ytd
+    assert_select ".statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]", minimum: ytd
+    assert_select ".statistics-heatmap-header .eyebrow", text: /This year/
     assert_select ".statistics-heatmap-grid .statistics-heatmap-cell[title]", count: 0
   end
 
