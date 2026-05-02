@@ -37,3 +37,5 @@
 # Local git worktrees.
 /.worktrees/
 
+
+plugins/book_plugin/test/dummy
