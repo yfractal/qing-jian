@@ -51,6 +51,21 @@ module BookPlugin
     end
 
     def normalize_layout_item(item)
+      if item["type"] == "image" && item["__pending_upload__"].is_a?(Hash)
+        pending = item.fetch("__pending_upload__")
+        data = pending["data"]
+        return item.except("file", "__pending_upload__") if data.blank?
+
+        filename = pending["filename"].to_s.presence || "image.png"
+        io = StringIO.new(data.b)
+        blob = ActiveStorage::Blob.create_and_upload!(
+          io:,
+          filename:,
+          content_type: content_type_for_image_filename(filename)
+        )
+        return item.except("file", "__pending_upload__").merge("active_storage_blob_id" => blob.id)
+      end
+
       return item unless item["type"] == "image" && item["file"].present?
 
       image_path = item.fetch("file")
@@ -58,10 +73,20 @@ module BookPlugin
         ActiveStorage::Blob.create_and_upload!(
           io:,
           filename: File.basename(image_path),
-          content_type: "image/png"
+          content_type: content_type_for_image_filename(File.basename(image_path))
         )
       end
       item.except("file").merge("active_storage_blob_id" => blob.id)
+    end
+
+    def content_type_for_image_filename(filename)
+      case File.extname(filename).downcase
+      when ".png" then "image/png"
+      when ".jpg", ".jpeg" then "image/jpeg"
+      when ".gif" then "image/gif"
+      when ".webp" then "image/webp"
+      else "application/octet-stream"
+      end
     end
   end
 end
