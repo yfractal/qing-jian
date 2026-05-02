@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "test_helper"
 require "fileutils"
 
@@ -24,74 +26,112 @@ module BookPlugin
       status = StatusDouble.new(true, 0, false, nil, true)
       command_args = nil
       timeout_value = nil
-      option_lookup = ->(command, flag) { command[command.index(flag) + 1] }
+      layout_json = {
+        "layout" => [
+          { "type" => "text", "text" => "Hi", "bbox" => [0, 0, 10, 12], "font_size" => 10 }
+        ],
+        "width" => 100,
+        "height" => 200
+      }.to_json
 
       with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
         timeout_value = timeout_seconds
         command_args = command
-        out_path = option_lookup.call(command, "--out")
-        File.write(out_path, "<article>Extracted</article>")
-        ["", "", status, false]
+        [layout_json, "", status, false]
       }) do
         result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 5)
 
         assert_predicate result, :success?
-        assert_equal "<article>Extracted</article>", result.html
+        assert_includes result.html, "Hi"
+        assert_includes result.html, "<html>"
         assert_empty result.images
         assert_nil result.error_message
         assert_equal 30, timeout_value
         assert_equal "python3", command_args[0]
-        assert_match(%r{/extract2\.py\z}, command_args[1])
+        assert_match(%r{/pdf_layout_extract\.py\z}, command_args[1])
         assert_equal "/tmp/book.pdf", command_args[2]
         assert_equal "4", option_value(command_args, "--page")
-        assert_equal "0", option_value(command_args, "--load-js")
-        assert option_value(command_args, "--out").end_with?(".html")
-        assert_includes command_args, "--output-dir"
-        refute_includes command_args, "--scale"
+        idx = command_args.index("--output-dir")
+        assert idx, "expected --output-dir in command"
+        assert_match(%r{book-plugin-extract}, command_args[idx + 1])
+        refute_includes command_args, "--out"
+        refute_includes command_args, "--load-js"
       end
     end
 
-    test "passes output dir to python and returns image payloads on success" do
+    test "returns image payloads when layout includes images under workdir" do
       status = StatusDouble.new(true, 0, false, nil, true)
       command_args = nil
-      option_lookup = ->(command, flag) { command[command.index(flag) + 1] }
 
       with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
         command_args = command
-        out_path = option_lookup.call(command, "--out")
-        output_dir = option_lookup.call(command, "--output-dir")
-        FileUtils.mkdir_p(output_dir)
-        File.write(File.join(output_dir, "img_0_0.png"), "fakepng")
-        File.write(out_path, "<html><body><img src=\"#{File.join(output_dir, 'img_0_0.png')}\"></body></html>")
-        ["", "", status, false]
+        workdir = command[command.index("--output-dir") + 1]
+        FileUtils.mkdir_p(workdir)
+        img_path = File.join(workdir, "img_0_0.png")
+        File.binwrite(img_path, "fakepng")
+        payload = {
+          "layout" => [
+            {
+              "type" => "image",
+              "file" => img_path,
+              "bbox" => [0, 0, 10, 10]
+            }
+          ],
+          "width" => 100,
+          "height" => 200
+        }
+        [payload.to_json, "", status, false]
       }) do
-        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 1)
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 1, load_js: false)
 
         assert_predicate result, :success?
         assert_includes command_args, "--output-dir"
-        assert_not_nil option_lookup.call(command_args, "--output-dir")
-        assert_equal "0", option_lookup.call(command_args, "--page")
+        assert_equal "0", option_value(command_args, "--page")
         assert_equal 1, result.images.size
         assert_equal "img_0_0.png", result.images.first.fetch(:filename)
         assert_equal "fakepng", result.images.first.fetch(:data)
       end
     end
 
-    test "passes explicit load_js false to extractor command" do
+    test "omits script when load_js is false" do
       status = StatusDouble.new(true, 0, false, nil, true)
-      command_args = nil
-      option_lookup = ->(command, flag) { command[command.index(flag) + 1] }
+      layout_json = {
+        "layout" => [
+          { "type" => "text", "text" => "Hi", "bbox" => [0, 0, 10, 12], "font_size" => 10 }
+        ],
+        "width" => 100,
+        "height" => 200
+      }.to_json
 
       with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
-        command_args = command
-        out_path = option_lookup.call(command, "--out")
-        File.write(out_path, "<article>Extracted</article>")
-        ["", "", status, false]
+        [layout_json, "", status, false]
       }) do
         result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 5, load_js: false)
 
         assert_predicate result, :success?
-        assert_equal "0", option_value(command_args, "--load-js")
+        refute_includes result.html, "<script>"
+        refute_includes result.html, "postMessage"
+      end
+    end
+
+    test "includes script when load_js is true" do
+      status = StatusDouble.new(true, 0, false, nil, true)
+      layout_json = {
+        "layout" => [
+          { "type" => "text", "text" => "Hi", "bbox" => [0, 0, 10, 12], "font_size" => 10 }
+        ],
+        "width" => 100,
+        "height" => 200
+      }.to_json
+
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
+        [layout_json, "", status, false]
+      }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 5, load_js: true)
+
+        assert_predicate result, :success?
+        assert_includes result.html, "<script>"
+        assert_includes result.html, "postMessage"
       end
     end
 
@@ -178,12 +218,9 @@ module BookPlugin
     test "returns error when extractor output is empty" do
       status = StatusDouble.new(true, 0, false, nil, true)
       timeout_value = nil
-      option_lookup = ->(command, flag) { command[command.index(flag) + 1] }
 
       with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
         timeout_value = timeout_seconds
-        out_path = option_lookup.call(command, "--out")
-        File.write(out_path, " \n")
         ["", "", status, false]
       }) do
         result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 3)
@@ -192,7 +229,7 @@ module BookPlugin
         assert_nil result.html
         assert_empty result.images
         assert_equal 30, timeout_value
-        assert_match(/empty html output/i, result.error_message)
+        assert_match(/invalid json output/i, result.error_message)
       end
     end
 
