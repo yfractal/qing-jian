@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "erb"
-require "securerandom"
 require_relative "pdf_selection_script"
 
 module BookPlugin
@@ -36,13 +35,14 @@ module BookPlugin
       sorted = @layout.sort_by { |el| [el.fetch("bbox")[1], el.fetch("bbox")[0]] }
       vector_paths = []
 
-      sorted.each do |el|
+      sorted.each_with_index do |el, idx|
         x0, y0, x1, y1 = el.fetch("bbox")
+        element_id = "el-#{idx + 1}"
         case el["type"]
         when "text"
-          parts << text_div(el, x0, y0, s)
+          parts << text_div(el, x0, y0, s, element_id: element_id)
         when "image"
-          parts << image_tag(el, x0, y0, x1, y1, s)
+          parts << image_tag(el, x0, y0, x1, y1, s, element_id: element_id)
         when "vector"
           vector_paths.concat(el["paths"] || [])
         end
@@ -153,8 +153,7 @@ module BookPlugin
       HTML
     end
 
-    def text_div(el, x0, y0, s)
-      element_id = "el-#{SecureRandom.hex(16)}"
+    def text_div(el, x0, y0, s, element_id:)
       text = ERB::Util.html_escape(el.fetch("text"))
       fs = el.fetch("font_size") * @scale * 0.9
       <<~HTML
@@ -171,8 +170,7 @@ module BookPlugin
       HTML
     end
 
-    def image_tag(el, x0, y0, x1, y1, s)
-      element_id = "el-#{SecureRandom.hex(16)}"
+    def image_tag(el, x0, y0, x1, y1, s, element_id:)
       src_escaped = ERB::Util.html_escape(image_src(el))
       <<~HTML
         <img class="image"
