@@ -6,8 +6,18 @@ require_relative "pdf_selection_script"
 module BookPlugin
   class PdfPageHtmlRenderer
     class << self
-      def render(layout:, width:, height:, scale: 1.5, area: nil, load_js: true)
-        new(layout: layout, width: width, height: height, scale: scale, area: area, load_js: load_js).render
+      def render(layout:, width:, height:, scale: 1.5, area: nil, load_js: true,
+                 areas_to_show: nil, items_to_remember: nil)
+        new(
+          layout: layout,
+          width: width,
+          height: height,
+          scale: scale,
+          area: area,
+          load_js: load_js,
+          areas_to_show: areas_to_show,
+          items_to_remember: items_to_remember
+        ).render
       end
     end
 
@@ -16,13 +26,16 @@ module BookPlugin
     VECTOR_PAINT_NONE = %w[none transparent].freeze
     VECTOR_BLACK = "#000000"
 
-    def initialize(layout:, width:, height:, scale:, area:, load_js: true)
+    def initialize(layout:, width:, height:, scale:, area:, load_js: true,
+                   areas_to_show: nil, items_to_remember: nil)
       @layout = layout
       @width = width.to_f
       @height = height.to_f
       @scale = scale.to_f
       @area = area
       @load_js = load_js
+      @areas_to_show = areas_to_show || {}
+      @items_to_remember = items_to_remember
     end
 
     def render
@@ -55,6 +68,34 @@ module BookPlugin
     end
 
     private
+
+    def resolved_initial_area_pdf
+      return @area if @area.present?
+
+      h = @areas_to_show.stringify_keys
+      return nil unless %w[x0 y0 x1 y1].all? { |k| h.key?(k) }
+
+      h.slice("x0", "y0", "x1", "y1").transform_values(&:to_f)
+    end
+
+    def picked_text_groups_for_script
+      items = @items_to_remember
+      return nil if items.blank?
+
+      if items.is_a?(Array) && items.all? { |e| e.is_a?(String) }
+        return items
+      end
+
+      if items.is_a?(Array) && items.first.is_a?(Array)
+        return items
+      end
+
+      if items.is_a?(Array) && items.all? { |e| e.is_a?(Hash) }
+        return [items]
+      end
+
+      nil
+    end
 
     def header_css(s)
       w = s.call(@width)
@@ -142,8 +183,9 @@ module BookPlugin
     end
 
     def toolbar_and_page_open
-      text_btn_class = @area.nil? ? ' class="is-active"' : ""
-      area_btn_class = @area.present? ? ' class="is-active"' : ""
+      initial_area = resolved_initial_area_pdf
+      text_btn_class = initial_area.nil? ? ' class="is-active"' : ""
+      area_btn_class = initial_area.present? ? ' class="is-active"' : ""
       <<~HTML
         <div class="toolbar">
             <button id="btn-pick-text" type="button"#{text_btn_class}>Pick items to remember</button>
@@ -293,7 +335,11 @@ module BookPlugin
     def document_close
       chunks = []
       if @load_js
-        js = PdfSelectionScript.build(scale: @scale, initial_area: @area)
+        js = PdfSelectionScript.build(
+          scale: @scale,
+          initial_area: resolved_initial_area_pdf,
+          initial_picked_text_groups: picked_text_groups_for_script
+        )
         chunks << <<~HTML
           <script>
           #{js}
