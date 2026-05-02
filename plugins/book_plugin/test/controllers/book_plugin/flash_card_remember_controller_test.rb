@@ -58,6 +58,7 @@ module BookPlugin
       assert_response :success
       expected_href = "/books/books/#{book.id}/flash_cards/remember?reviewed_flash_card_ids=#{card.id}"
       assert_select "a[href=?]", expected_href, text: "Next flash card"
+      assert_select "section.recall-layout-result aside.recall-sidebar"
     end
 
     private
