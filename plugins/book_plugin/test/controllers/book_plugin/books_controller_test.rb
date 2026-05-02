@@ -37,5 +37,15 @@ module BookPlugin
       assert_response :success
       assert_select "a", "Create flash card"
     end
+
+    test "show includes flash cards index link" do
+      book = BookPlugin::Book.new(title: "Attached", description: "Has file")
+      book.file.attach(io: StringIO.new("%PDF-1.4 sample"), filename: "attached.pdf", content_type: "application/pdf")
+      book.save!
+
+      get "/books/books/#{book.id}"
+      assert_response :success
+      assert_select "a", "Flash cards"
+    end
   end
 end
