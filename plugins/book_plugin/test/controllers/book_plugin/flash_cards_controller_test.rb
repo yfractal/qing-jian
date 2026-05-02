@@ -201,6 +201,59 @@ module BookPlugin
       assert_includes @response.body, "No flash cards yet"
     end
 
+    test "edit renders reused form and preview" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+      book_html = BookHtml.create!(book:, page_number: 3, layout: sample_layout("Edit page"))
+      card = FlashCard.create!(
+        book:,
+        book_html:,
+        areas_to_show: { "a" => 1 },
+        items_to_remember: ["line1"]
+      )
+
+      get "/books/books/#{book.id}/flash_cards/#{card.id}/edit"
+
+      assert_response :success
+      assert_select 'script[src*="flash_card_preview_parent"]'
+      assert_select "iframe.book-html-preview-frame[srcdoc*='Edit page']"
+      assert_select "textarea#flash_card_areas_to_show", text: /\"a\"/
+      assert_select "input[type=submit][value='Update flash card']"
+    end
+
+    test "update changes flash card and redirects to index" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+      book_html = BookHtml.create!(book:, page_number: 4, layout: sample_layout("P4"))
+      card = FlashCard.create!(book:, book_html:, areas_to_show: {}, items_to_remember: [])
+
+      patch "/books/books/#{book.id}/flash_cards/#{card.id}", params: {
+        flash_card: {
+          book_html_id: book_html.id,
+          areas_to_show: "{\"k\":2}",
+          items_to_remember_text: "x\ny"
+        }
+      }
+
+      assert_redirected_to "/books/books/#{book.id}/flash_cards"
+      card.reload
+      assert_equal({ "k" => 2 }, card.areas_to_show)
+      assert_equal %w[x y], card.items_to_remember
+    end
+
+    test "destroy removes flash card and redirects to index" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+      book_html = BookHtml.create!(book:, page_number: 1, layout: sample_layout)
+      card = FlashCard.create!(book:, book_html:, areas_to_show: {}, items_to_remember: [])
+
+      assert_difference("FlashCard.count", -1) do
+        delete "/books/books/#{book.id}/flash_cards/#{card.id}"
+      end
+
+      assert_redirected_to "/books/books/#{book.id}/flash_cards"
+    end
+
     private
 
     def sample_layout(text = "Page text")
