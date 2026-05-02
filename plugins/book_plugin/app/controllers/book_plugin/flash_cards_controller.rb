@@ -104,7 +104,13 @@ module BookPlugin
     def parse_items_to_remember(raw_value)
       return [] if raw_value.blank?
 
-      raw_value.split("\n").map(&:strip).reject(&:blank?)
+      stripped = raw_value.strip
+      parsed = JSON.parse(stripped)
+      return parsed if parsed.is_a?(Array)
+
+      []
+    rescue JSON::ParserError
+      stripped.split(/\r?\n/, -1).map(&:strip).reject(&:blank?)
     end
   end
 end

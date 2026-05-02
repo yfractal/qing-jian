@@ -16,7 +16,7 @@
     <%= text_area_tag "flash_card[areas_to_show]", flash_card.areas_to_show.to_json, id: "flash_card_areas_to_show", rows: 5 %>
 
     <%= label_tag "flash_card_items_to_remember_text", "Items to remember (one per line)" %>
-    <%= text_area_tag "flash_card[items_to_remember_text]", flash_card.items_to_remember.join("\n"), id: "flash_card_items_to_remember_text", rows: 5 %>
+    <%= text_area_tag "flash_card[items_to_remember_text]", flash_card.items_to_remember, id: "flash_card_items_to_remember_text", rows: 5 %>
 
     <%= f.submit(flash_card.persisted? ? "Update flash card" : "Create flash card", class: "button button-primary") %>
   <% end %>
