@@ -142,10 +142,12 @@ module BookPlugin
     end
 
     def toolbar_and_page_open
+      text_btn_class = @area.nil? ? ' class="is-active"' : ""
+      area_btn_class = @area.present? ? ' class="is-active"' : ""
       <<~HTML
         <div class="toolbar">
-            <button id="btn-pick-area" type="button">Pick area to show</button>
-            <button id="btn-pick-text" type="button">Pick items to remember</button>
+            <button id="btn-pick-text" type="button"#{text_btn_class}>Pick items to remember</button>
+            <button id="btn-pick-area" type="button"#{area_btn_class}>Pick area to show</button>
         </div>
         <div class="page">
       HTML

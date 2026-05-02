@@ -280,8 +280,8 @@
         syncRememberedHighlights();
     });
 
-    setMode("area");
     if (INITIAL_AREA_PDF) {
+        setMode("area");
         const initialArea = {
             x0: INITIAL_AREA_PDF.x0 * SCALE,
             y0: INITIAL_AREA_PDF.y0 * SCALE,
@@ -289,5 +289,8 @@
             y1: INITIAL_AREA_PDF.y1 * SCALE
         };
         applySelection(initialArea);
+    } else {
+        setMode("text");
+        startNewPickedTextItem();
     }
 })();
