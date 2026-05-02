@@ -126,5 +126,29 @@ module BookPlugin
       assert_includes html, "el-1"
       assert_includes html, "Alpha"
     end
+
+    test "study mode hides authoring toolbar and embeds recall script" do
+      layout = [
+        { "type" => "text", "text" => "Alpha", "bbox" => [0, 0, 10, 10], "font_size" => 12 },
+        { "type" => "text", "text" => "Beta", "bbox" => [20, 0, 30, 10], "font_size" => 12 }
+      ]
+
+      html = PdfPageHtmlRenderer.render(
+        layout: layout,
+        width: 100,
+        height: 200,
+        scale: 2,
+        mode: :study,
+        areas_to_show: { "x0" => 0, "y0" => 0, "x1" => 40, "y1" => 40 },
+        items_to_remember: [[{ "id" => "el-1", "text" => "Alpha" }]],
+        load_js: true
+      )
+
+      refute_includes html, "btn-pick-area"
+      assert_includes html, "flash-card-hidden-recall-item"
+      assert_includes html, "flash-card-study-show-next-item"
+      assert_includes html, "INITIAL_PICKED_TEXT_GROUPS"
+      assert_includes html, '"x0":0'
+    end
   end
 end

@@ -26,3 +26,28 @@
   border-radius: 12px;
   margin-bottom: 1rem;
 }
+
+.flash-card-remember-page {
+  max-width: 980px;
+}
+
+.flash-card-study-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.flash-card-study-frame {
+  min-height: 900px;
+}
+
+.flash-card-reveal-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.flash-card-reveal-progress {
+  margin: 0;
+  color: #52606d;
+}
