@@ -43,7 +43,7 @@
     </article>
   </section>
 
-  <section class="statistics-heatmap" aria-label="Daily review heatmap">
+  <section class="statistics-heatmap statistics-heatmap--floating-tooltip" aria-label="Daily review heatmap">
     <div class="statistics-heatmap-header">
       <p class="eyebrow">This year</p>
       <p class="statistics-heatmap-today">Today: <strong><%= @stats[:reviews_today] %></strong> reviews</p>
@@ -77,3 +77,88 @@
     </div>
   </section>
 </main>
+
+<script>
+(function () {
+  var anchoredCell = null;
+
+  function ensureTooltipEl() {
+    var el = document.getElementById("statistics-heatmap-tooltip");
+    if (el) return el;
+    el = document.createElement("div");
+    el.id = "statistics-heatmap-tooltip";
+    el.className = "statistics-heatmap-floating-tooltip";
+    el.setAttribute("role", "tooltip");
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function positionTooltip(cell, tip) {
+    var r = cell.getBoundingClientRect();
+    var pad = 8;
+    var cx = r.left + r.width / 2;
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var half = tw / 2;
+    cx = Math.max(pad + half, Math.min(cx, window.innerWidth - half - pad));
+    var top = r.top - th - pad;
+    if (top < pad) {
+      top = r.bottom + pad;
+    }
+    tip.style.left = cx + "px";
+    tip.style.top = top + "px";
+    tip.style.transform = "translateX(-50%)";
+  }
+
+  function repositionIfVisible() {
+    var tip = document.getElementById("statistics-heatmap-tooltip");
+    if (!tip || !tip.classList.contains("is-visible") || !anchoredCell) return;
+    positionTooltip(anchoredCell, tip);
+  }
+
+  function initStatisticsHeatmapTooltip() {
+    var section = document.querySelector(".statistics-heatmap--floating-tooltip");
+    if (!section) return;
+    var grid = section.querySelector(".statistics-heatmap-grid");
+    if (!grid) return;
+
+    var tip = ensureTooltipEl();
+    if (grid.dataset.heatmapTooltipBound === "1") return;
+    grid.dataset.heatmapTooltipBound = "1";
+
+    function show(cell) {
+      var text = cell.getAttribute("data-tooltip");
+      if (!text) return;
+      anchoredCell = cell;
+      tip.textContent = text;
+      tip.classList.add("is-visible");
+      positionTooltip(cell, tip);
+    }
+
+    function hide() {
+      anchoredCell = null;
+      tip.classList.remove("is-visible");
+      tip.textContent = "";
+    }
+
+    grid.querySelectorAll(".statistics-heatmap-cell[data-tooltip]").forEach(function (cell) {
+      cell.addEventListener("mouseenter", function () {
+        show(cell);
+      });
+      cell.addEventListener("mouseleave", hide);
+    });
+
+    if (!window.__statisticsHeatmapTooltipGlobalListeners) {
+      window.__statisticsHeatmapTooltipGlobalListeners = true;
+      window.addEventListener("scroll", repositionIfVisible, true);
+      window.addEventListener("resize", repositionIfVisible);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initStatisticsHeatmapTooltip);
+  } else {
+    initStatisticsHeatmapTooltip();
+  }
+})();
+</script>

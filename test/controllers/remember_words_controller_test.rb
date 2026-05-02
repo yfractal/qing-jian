@@ -348,7 +348,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h1", "Statistics"
     assert_match(/Today \d+ reviews/, @response.body)
     assert_select ".statistics-summary-card", minimum: 4
-    assert_select ".statistics-heatmap"
+    assert_select "section.statistics-heatmap.statistics-heatmap--floating-tooltip"
     assert_select ".statistics-label", text: /remember_times >= 6/
     assert_select ".statistics-label", text: /Reviews in last 7 days/
     assert_select ".statistics-label", text: /Active review days in last 30 days/

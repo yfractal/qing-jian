@@ -540,10 +540,10 @@ input[type="submit"].button-large {
   gap: 0.25rem;
 }
 
-/* Horizontal scroll lives here; generous padding keeps CSS tooltips inside the scroll box. */
+/* Horizontal scroll; tooltips use a fixed-position layer (see statistics view) so they are not clipped. */
 .statistics-heatmap-scroll {
   overflow-x: auto;
-  padding: 0 6rem 3rem 0.25rem;
+  padding: 0.25rem 0.25rem 1rem;
   margin-inline: -0.25rem;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
@@ -608,6 +608,37 @@ input[type="submit"].button-large {
 .statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]:hover::after {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Statistics page: pseudo-element tooltips clip inside overflow-x; use body-level fixed tooltip instead. */
+.statistics-heatmap--floating-tooltip .statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]::before,
+.statistics-heatmap--floating-tooltip .statistics-heatmap-grid .statistics-heatmap-cell[data-tooltip]::after {
+  display: none !important;
+  content: none !important;
+}
+
+.statistics-heatmap-floating-tooltip {
+  position: fixed;
+  z-index: 10000;
+  margin: 0;
+  padding: 0.3rem 0.45rem;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.06s ease;
+  max-width: min(90vw, 22rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statistics-heatmap-floating-tooltip.is-visible {
+  opacity: 1;
 }
 
 .statistics-heatmap-level-0 {
