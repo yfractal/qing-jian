@@ -1,6 +1,11 @@
 module BookPlugin
   class FlashCardsController < ApplicationController
     before_action :set_book
+    before_action :set_flash_card, only: [:edit, :update, :destroy]
+
+    def index
+      @flash_cards = @book.flash_cards.includes(:book_html).order(created_at: :desc)
+    end
 
     def new
       @page_number, invalid_page_number = parse_page_number(params[:page_number])
@@ -40,7 +45,34 @@ module BookPlugin
       end
     end
 
+    def edit
+      @book_html = @flash_card.book_html
+    end
+
+    def update
+      @flash_card.assign_attributes(flash_card_params)
+      @flash_card.areas_to_show = parse_areas_to_show(params.dig(:flash_card, :areas_to_show))
+      @flash_card.items_to_remember = parse_items_to_remember(params.dig(:flash_card, :items_to_remember_text))
+
+      if @flash_card.save
+        redirect_to book_flash_cards_path(@book), notice: "Flash card updated."
+      else
+        @book_html = @flash_card.book_html
+        flash.now[:alert] = "Could not update flash card."
+        render :edit, status: :unprocessable_entity
+      end
+    end
+
+    def destroy
+      @flash_card.destroy!
+      redirect_to book_flash_cards_path(@book), notice: "Flash card deleted."
+    end
+
     private
+
+    def set_flash_card
+      @flash_card = @book.flash_cards.find(params[:id])
+    end
 
     def set_book
       @book = Book.find(params[:book_id])

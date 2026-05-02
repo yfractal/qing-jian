@@ -1,7 +1,7 @@
 <% return unless book_html.present? %>
 
 <section class="book-card">
-  <h2>2) Create flash card</h2>
+  <h2><%= flash_card.persisted? ? "Edit flash card" : "2) Create flash card" %></h2>
   <iframe
     class="book-html-preview-frame"
     title="Book page HTML preview"
@@ -18,6 +18,6 @@
     <%= label_tag "flash_card_items_to_remember_text", "Items to remember (one per line)" %>
     <%= text_area_tag "flash_card[items_to_remember_text]", flash_card.items_to_remember.join("\n"), id: "flash_card_items_to_remember_text", rows: 5 %>
 
-    <%= f.submit "Create flash card", class: "button button-primary" %>
+    <%= f.submit(flash_card.persisted? ? "Update flash card" : "Create flash card", class: "button button-primary") %>
   <% end %>
 </section>
