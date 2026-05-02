@@ -2,23 +2,36 @@ import json
 from pathlib import Path
 
 
-SELECTION_JS_PATH = (
-    Path(__file__).resolve().parent
-    / "plugins"
+_SELECTION_JS_REL = (
+    Path("plugins")
     / "book_plugin"
     / "app"
-    / "assets"
-    / "javascripts"
+    / "services"
     / "book_plugin"
-    / "flash_card_selection.js"
+    / "pdf_selection_script.js.txt"
 )
-SELECTION_JS_SOURCE = SELECTION_JS_PATH.read_text(encoding="utf-8")
 
 
-def build_selection_js(scale, initial_area=None):
-    config = {
-        "scale": scale,
-        "initialAreaPdf": initial_area if initial_area else None,
-    }
-    config_assignment = f"window.__BOOK_PLUGIN_SELECTION_CONFIG__ = {json.dumps(config)};"
-    return f"{config_assignment}\n{SELECTION_JS_SOURCE}"
+def build_selection_js(scale, initial_area=None, initial_picked_text_groups=None):
+    """Mirror PdfSelectionScript.build for parity tests (reads canonical JS template)."""
+    path = Path(__file__).resolve().parent / _SELECTION_JS_REL
+    body = path.read_text(encoding="utf-8")
+    compact = (",", ":")
+    initial_json = (
+        json.dumps(initial_area, separators=compact) if initial_area is not None else "null"
+    )
+    groups_json = (
+        json.dumps(initial_picked_text_groups, separators=compact)
+        if initial_picked_text_groups is not None
+        else "null"
+    )
+    body = body.replace("const SCALE = 1.0;", f"const SCALE = {float(scale)};")
+    body = body.replace(
+        "const INITIAL_AREA_PDF = null;",
+        f"const INITIAL_AREA_PDF = {initial_json};",
+    )
+    body = body.replace(
+        "const INITIAL_PICKED_TEXT_GROUPS = null;",
+        f"const INITIAL_PICKED_TEXT_GROUPS = {groups_json};",
+    )
+    return body

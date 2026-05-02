@@ -26,6 +26,7 @@ module BookPlugin
       s = PdfSelectionScript.build(scale: 2.0, initial_area: nil)
       assert_includes s, "const SCALE = 2.0;"
       assert_includes s, "const INITIAL_AREA_PDF = null;"
+      assert_includes s, "const INITIAL_PICKED_TEXT_GROUPS = null;"
     end
   end
 end

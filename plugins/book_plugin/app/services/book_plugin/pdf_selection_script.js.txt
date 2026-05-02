@@ -6,6 +6,7 @@
     const selectionBox = document.getElementById("selection-box");
     const SCALE = 1.0;
     const INITIAL_AREA_PDF = null;
+    const INITIAL_PICKED_TEXT_GROUPS = null;
 
     let mode = null;
     let startX = 0;
@@ -280,6 +281,62 @@
         syncRememberedHighlights();
     });
 
+    function normalizePickedTextGroups(raw) {
+        if (!raw || !Array.isArray(raw) || raw.length === 0) return [];
+
+        const first = raw[0];
+        if (typeof first === "string") {
+            const group = [];
+            raw.forEach((line) => {
+                const trimmed = String(line).trim();
+                if (!trimmed) return;
+                const el = Array.from(document.querySelectorAll(".text")).find(
+                    (node) => node.innerText.trim() === trimmed
+                );
+                if (el) group.push({ id: el.id, text: trimmed });
+            });
+            return group.length ? [group] : [];
+        }
+
+        if (first && typeof first === "object" && !Array.isArray(first) && "id" in first && "text" in first) {
+            return [raw.map((entry) => ({ id: entry.id, text: entry.text }))];
+        }
+
+        return raw
+            .filter((g) => Array.isArray(g))
+            .map((g) =>
+                g
+                    .filter((e) => e && e.id && e.text)
+                    .map((e) => ({ id: e.id, text: e.text }))
+            )
+            .filter((g) => g.length > 0);
+    }
+
+    function hydratePickedTextFromInitial() {
+        const groups = normalizePickedTextGroups(INITIAL_PICKED_TEXT_GROUPS);
+        if (groups.length === 0) return false;
+
+        pickedTextItems.length = 0;
+        groups.forEach((g) => pickedTextItems.push(g.slice()));
+
+        currentPickedTextItem.length = 0;
+        currentPickedTextByElementId.clear();
+        rememberedTextIds.clear();
+
+        const last = groups[groups.length - 1];
+        last.forEach((entry) => {
+            currentPickedTextByElementId.set(entry.id, entry);
+        });
+
+        groups.forEach((g) => {
+            g.forEach((entry) => rememberedTextIds.add(entry.id));
+        });
+
+        syncRememberedHighlights();
+        logPickedTextItems();
+        return true;
+    }
+
     if (INITIAL_AREA_PDF) {
         setMode("area");
         const initialArea = {
@@ -291,6 +348,10 @@
         applySelection(initialArea);
     } else {
         setMode("text");
+    }
+
+    const hydrated = hydratePickedTextFromInitial();
+    if (!hydrated && !INITIAL_AREA_PDF) {
         startNewPickedTextItem();
     }
 })();
