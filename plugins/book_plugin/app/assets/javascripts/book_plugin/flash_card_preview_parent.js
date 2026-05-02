@@ -17,17 +17,9 @@
   }
 
   function setItemsTextFromPicked(items) {
-    const el = document.getElementById("flash_card_items_to_remember_text");
-    if (!el || !Array.isArray(items)) return;
-    const lines = items
-      .flatMap(function (group) {
-        return Array.isArray(group) ? group : [];
-      })
-      .map(function (entry) {
-        return entry && entry.text ? String(entry.text).trim() : "";
-      })
-      .filter(Boolean);
-    el.value = lines.join("\n");
+   const el = document.getElementById("flash_card_items_to_remember_text");
+   if (!el || !Array.isArray(items)) return;
+   el.value = JSON.stringify(items);
   }
 
   window.addEventListener("message", function (ev) {
