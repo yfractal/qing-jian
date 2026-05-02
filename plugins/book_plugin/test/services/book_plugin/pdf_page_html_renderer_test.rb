@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "stringio"
 
 module BookPlugin
   class PdfPageHtmlRendererTest < ActiveSupport::TestCase
@@ -48,6 +49,30 @@ module BookPlugin
         assert_includes html, "btn-pick-area"
         assert_includes html, "const SCALE = 1.5;"
       end
+    end
+
+    test "renders image from active storage blob id" do
+      blob = ActiveStorage::Blob.create_and_upload!(
+        io: StringIO.new(PNG_1X1),
+        filename: "img_19_0.png",
+        content_type: "image/png"
+      )
+      layout = [
+        { "type" => "image", "active_storage_blob_id" => blob.id, "bbox" => [0, 0, 10, 10] }
+      ]
+
+      html = PdfPageHtmlRenderer.render(
+        layout:,
+        width: 100,
+        height: 200,
+        scale: 1.5,
+        area: nil,
+        load_js: false
+      )
+
+      assert_includes html, "/rails/active_storage/"
+      assert_includes html, "img_19_0.png"
+      refute_includes html, "active_storage_blob_id"
     end
   end
 end

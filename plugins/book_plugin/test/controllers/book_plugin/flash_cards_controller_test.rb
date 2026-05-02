@@ -1,5 +1,6 @@
 require "test_helper"
 require "base64"
+require "tempfile"
 
 module BookPlugin
   class FlashCardsControllerTest < ActionDispatch::IntegrationTest
@@ -27,55 +28,55 @@ module BookPlugin
       assert_select "input[name='page_number']"
     end
 
-    test "new with page number reuses cached html without extractor call" do
+    test "new with page number reuses cached layout without finder call" do
       book = create_book_with_pdf
-      BookHtml.create!(book:, page_number: 3, html: "<article>Cached HTML for page 3</article>")
+      BookHtml.create!(book:, page_number: 3, layout: sample_layout("Cached page 3"))
 
-      with_singleton_stub(PdfHtmlExtractor, :call, ->(**) { raise "extractor should not be called on cache hit" }) do
+      with_singleton_stub(FindOrCreateBookHtml, :call, ->(**) { raise "finder should not be called on cache hit" }) do
         get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 3 }
       end
 
       assert_response :success
       assert_equal 1, BookHtml.where(book:, page_number: 3).count
-      assert_select "iframe.book-html-preview-frame[srcdoc*='Cached HTML for page 3']"
+      assert_select "iframe.book-html-preview-frame[srcdoc*='Cached page 3']"
     end
 
-    test "new with page number cache miss calls extractor and persists html" do
+    test "new with page number cache miss calls finder" do
       book = create_book_with_pdf
-      extractor_called = false
-      extractor_page_number = nil
-      extractor_load_js = nil
-      pdf_path_present = nil
-      pdf_header = nil
+      finder_called = false
+      received_book = nil
+      received_page = nil
 
-      with_singleton_stub(PdfHtmlExtractor, :call, lambda { |pdf_path:, page_number:, load_js:, **|
-        extractor_called = true
-        extractor_page_number = page_number
-        extractor_load_js = load_js
-        pdf_path_present = File.exist?(pdf_path)
-        pdf_header = File.binread(pdf_path, 8)
-
-        PdfHtmlExtractor::Result.new(html: "<article>Extracted HTML for page 3</article>", images: [], error_message: nil)
+      with_singleton_stub(FindOrCreateBookHtml, :call, lambda { |**kw|
+        finder_called = true
+        received_book = kw[:book]
+        received_page = kw[:page_number]
+        BookHtml.create!(
+          book: kw[:book],
+          page_number: 3,
+          layout: {
+            "width" => 100.0,
+            "height" => 200.0,
+            "items" => [
+              { "type" => "text", "text" => "Extracted page 3", "bbox" => [10, 20, 50, 35], "font_size" => 12 }
+            ]
+          }
+        )
       }) do
         get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 3 }
       end
 
       assert_response :success
-      assert_equal true, extractor_called
-      assert_equal 3, extractor_page_number
-      assert_equal false, extractor_load_js
-      assert_equal true, pdf_path_present
-      assert_equal "%PDF-1.4", pdf_header
-      assert_equal 1, BookHtml.where(book:, page_number: 3).count
-      assert_select "iframe.book-html-preview-frame[srcdoc*='Extracted HTML for page 3']"
+      assert_equal true, finder_called
+      assert_equal book, received_book
+      assert_equal 3, received_page
+      assert_select "iframe.book-html-preview-frame[srcdoc*='Extracted page 3']"
     end
 
     test "new with page number shows alert on extractor failure" do
       book = create_book_with_pdf
 
-      with_singleton_stub(PdfHtmlExtractor, :call, lambda { |**|
-        PdfHtmlExtractor::Result.new(html: nil, images: [], error_message: "boom")
-      }) do
+      with_singleton_stub(FindOrCreateBookHtml, :call, ->(**) { nil }) do
         assert_no_difference("BookHtml.count") do
           get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 7 }
         end
@@ -89,7 +90,7 @@ module BookPlugin
     test "new with non numeric page number shows validation alert without extraction" do
       book = create_book_with_pdf
 
-      with_singleton_stub(PdfHtmlExtractor, :call, ->(**) { raise "extractor should not be called for invalid page number" }) do
+      with_singleton_stub(FindOrCreateBookHtml, :call, ->(**) { raise "finder should not be called for invalid page number" }) do
         assert_no_difference("BookHtml.count") do
           get "/books/books/#{book.id}/flash_cards/new", params: { page_number: "abc" }
         end
@@ -103,7 +104,7 @@ module BookPlugin
     test "new with zero page number shows validation alert without extraction" do
       book = create_book_with_pdf
 
-      with_singleton_stub(PdfHtmlExtractor, :call, ->(**) { raise "extractor should not be called for invalid page number" }) do
+      with_singleton_stub(FindOrCreateBookHtml, :call, ->(**) { raise "finder should not be called for invalid page number" }) do
         assert_no_difference("BookHtml.count") do
           get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 0 }
         end
@@ -114,54 +115,44 @@ module BookPlugin
       assert_select "input[name='page_number']"
     end
 
-    test "new with page number reuses just-created row under uniqueness contention" do
-      book = create_book_with_pdf
-
-      with_singleton_stub(PdfHtmlExtractor, :call, lambda { |**|
-        BookHtml.create!(
-          book:,
-          page_number: 8,
-          html: "<article>Concurrent HTML for page 8</article>"
-        )
-        PdfHtmlExtractor::Result.new(html: "<article>Late extractor HTML</article>", images: [], error_message: nil)
-      }) do
-        get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 8 }
-      end
-
-      assert_response :success
-      assert_equal 1, BookHtml.where(book:, page_number: 8).count
-      assert_select "iframe.book-html-preview-frame[srcdoc*='Concurrent HTML for page 8']"
-    end
-
-    test "new persists book html images when extraction returns payloads" do
+    test "new persists layout image blobs when extraction returns image paths" do
       book = create_book_with_pdf
       png = Base64.decode64(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
       )
-      src = "/var/tmp/img_0_0.png"
-      html = %(<html><body><img src="#{src}"></body></html>)
 
-      with_singleton_stub(PdfHtmlExtractor, :call, lambda { |**|
-        PdfHtmlExtractor::Result.new(
-          html:,
-          images: [{ filename: "img_0_0.png", data: png }],
-          error_message: nil
-        )
-      }) do
-        get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 1 }
+      Tempfile.create(["img_0_0", ".png"]) do |f|
+        f.binmode
+        f.write(png)
+        f.flush
+
+        with_singleton_stub(PdfLayoutExtractor, :call, lambda { |**|
+          PdfLayoutExtractor::Result.new(
+            layout: [
+              { "type" => "image", "file" => f.path, "bbox" => [0, 0, 10, 10] }
+            ],
+            width: 100.0,
+            height: 200.0,
+            error_message: nil
+          )
+        }) do
+          get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 1 }
+        end
       end
 
       assert_response :success
 
       html_record = book.book_htmls.find_by!(page_number: 1)
-      assert_predicate html_record.images, :any?
-      assert_includes html_record.html, "/rails/active_storage/"
+      image_item = html_record.layout.fetch("items").find { |item| item["type"] == "image" }
+      assert image_item["active_storage_blob_id"].present?
+      assert_nil image_item["file"]
+      assert_select "iframe.book-html-preview-frame[srcdoc*='/rails/active_storage/']"
     end
 
     test "create persists flash card" do
       book = Book.new(title: "Book")
       book.save!(validate: false)
-      book_html = BookHtml.create!(book:, page_number: 2, html: "<p>Page 2</p>")
+      book_html = BookHtml.create!(book:, page_number: 2, layout: sample_layout("Page 2"))
 
       assert_difference("FlashCard.count", 1) do
         post "/books/books/#{book.id}/flash_cards", params: {
@@ -177,6 +168,16 @@ module BookPlugin
     end
 
     private
+
+    def sample_layout(text = "Page text")
+      {
+        "width" => 100.0,
+        "height" => 200.0,
+        "items" => [
+          { "type" => "text", "text" => text, "bbox" => [10, 20, 50, 35], "font_size" => 12 }
+        ]
+      }
+    end
 
     def create_book_with_pdf
       book = Book.new(title: "Book")

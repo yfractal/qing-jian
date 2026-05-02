@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_02_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_02_102000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -42,7 +42,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_02_000000) do
   create_table "book_plugin_book_htmls", force: :cascade do |t|
     t.integer "book_id", null: false
     t.datetime "created_at", null: false
-    t.text "html", null: false
+    t.json "layout", default: {}, null: false
     t.integer "page_number", null: false
     t.datetime "updated_at", null: false
     t.index ["book_id", "page_number"], name: "index_book_plugin_book_htmls_on_book_id_and_page_number", unique: true

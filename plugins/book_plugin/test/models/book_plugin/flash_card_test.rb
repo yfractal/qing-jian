@@ -6,7 +6,17 @@ module BookPlugin
       book = Book.new(title: "B")
       book.save!(validate: false)
 
-      html = BookHtml.create!(book:, page_number: 1, html: "<div>chunk</div>")
+      html = BookHtml.create!(
+        book:,
+        page_number: 1,
+        layout: {
+          "width" => 100.0,
+          "height" => 200.0,
+          "items" => [
+            { "type" => "text", "text" => "chunk", "bbox" => [10, 20, 50, 35], "font_size" => 12 }
+          ]
+        }
+      )
       card = FlashCard.new(book:, book_html: html)
 
       assert card.valid?

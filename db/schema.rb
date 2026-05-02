@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_01_090303) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_02_102000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -45,7 +45,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_01_090303) do
   create_table "book_plugin_book_htmls", force: :cascade do |t|
     t.bigint "book_id", null: false
     t.datetime "created_at", null: false
-    t.text "html", null: false
+    t.jsonb "layout", default: {}, null: false
     t.integer "page_number", null: false
     t.datetime "updated_at", null: false
     t.index ["book_id", "page_number"], name: "index_book_plugin_book_htmls_on_book_id_and_page_number", unique: true
