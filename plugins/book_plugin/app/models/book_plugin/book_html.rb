@@ -7,12 +7,14 @@ module BookPlugin
     validates :page_number, presence: true, uniqueness: { scope: :book_id }
     validate :layout_structure
 
-    def rendered_html(load_js: false)
+    def rendered_html(scale: 1.5, area: nil, load_js: true)
       PdfPageHtmlRenderer.render(
         layout: layout.fetch("items"),
         width: layout.fetch("width"),
         height: layout.fetch("height"),
-        load_js: load_js
+        scale:,
+        area:,
+        load_js:
       )
     end
 

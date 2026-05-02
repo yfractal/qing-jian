@@ -166,8 +166,7 @@ module BookPlugin
 
     def image_tag(el, x0, y0, x1, y1, s)
       element_id = "el-#{SecureRandom.hex(16)}"
-      path = el.fetch("file")
-      src_escaped = ERB::Util.html_escape(path)
+      src_escaped = ERB::Util.html_escape(image_src(el))
       <<~HTML
         <img class="image"
             id="#{element_id}"
@@ -180,6 +179,16 @@ module BookPlugin
                 height:#{s.call(y1 - y0)}px;
             ">
       HTML
+    end
+
+    def image_src(el)
+      blob_id = el["active_storage_blob_id"]
+      if blob_id.present?
+        blob = ActiveStorage::Blob.find(blob_id)
+        return Rails.application.routes.url_helpers.rails_blob_path(blob, only_path: true)
+      end
+
+      el.fetch("file")
     end
 
     def svg_block(vector_paths)

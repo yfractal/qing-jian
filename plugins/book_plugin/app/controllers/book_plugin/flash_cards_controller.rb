@@ -11,7 +11,10 @@ module BookPlugin
         return
       end
 
-      @book_html = find_or_create_book_html(@page_number) if @page_number
+      if @page_number
+        @book_html = @book.book_htmls.find_by(page_number: @page_number) ||
+          FindOrCreateBookHtml.call(book: @book, page_number: @page_number)
+      end
       if @page_number && @book_html.nil?
         @flash_card = @book.flash_cards.new
         flash.now[:alert] = "Could not extract page HTML. Please try again."
@@ -41,38 +44,6 @@ module BookPlugin
 
     def set_book
       @book = Book.find(params[:book_id])
-    end
-
-    def find_or_create_book_html(page_number)
-      cached_book_html = @book.book_htmls.find_by(page_number:)
-      return cached_book_html if cached_book_html
-
-      extraction_result = extract_page_html(page_number)
-      return nil unless extraction_result.success?
-
-      @book.book_htmls.create_or_find_by!(page_number:) do |book_html|
-        book_html.html = extraction_result.html
-      end
-
-      book_html = @book.book_htmls.find_by!(page_number:)
-      BookHtmlImageImporter.call(book_html:, extraction_result:)
-      book_html
-    rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid
-      @book.book_htmls.find_by(page_number:)
-    end
-
-    def extract_page_html(page_number)
-      unless page_number.is_a?(Integer) && page_number >= 1
-        return PdfHtmlExtractor::Result.new(html: nil, images: [], error_message: "Page number must be an integer greater than or equal to 1")
-      end
-
-      return PdfHtmlExtractor::Result.new(html: nil, images: [], error_message: "Book file is not attached") unless @book.file.attached?
-
-      @book.file.blob.open do |tempfile|
-        PdfHtmlExtractor.call(pdf_path: tempfile.path, page_number: page_number, load_js: false)
-      end
-    rescue StandardError => e
-      PdfHtmlExtractor::Result.new(html: nil, images: [], error_message: e.message)
     end
 
     def flash_card_params
