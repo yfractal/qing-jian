@@ -36,9 +36,10 @@
   min-height: 900px;
 }
 
-/* Flash card remember: iframe + sticky sidebar (scoped to this page) */
-.flash-card-remember-page {
-  max-width: 1120px;
+/* Flash card remember: iframe + sticky sidebar (scoped to this page).
+   Compound selector beats .remember-page max-width from application.css (loaded later). */
+.remember-page.flash-card-remember-page {
+  max-width: 1680px;
 }
 
 .flash-card-remember-page .recall-card.flash-card-study-card {
