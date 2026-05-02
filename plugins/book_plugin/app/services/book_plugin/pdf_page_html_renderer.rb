@@ -12,6 +12,11 @@ module BookPlugin
       end
     end
 
+    # PDFs often encode page graphics as white ink for dark backgrounds; on our white
+    # `.page` they disappear unless remapped to a dark paint.
+    VECTOR_PAINT_NONE = %w[none transparent].freeze
+    VECTOR_BLACK = "#000000"
+
     def initialize(layout:, width:, height:, scale:, area:, load_js: true)
       @layout = layout
       @width = width.to_f
@@ -201,8 +206,8 @@ module BookPlugin
 
       vector_paths.each do |path|
         d = ERB::Util.html_escape(path.fetch("d"))
-        stroke = ERB::Util.html_escape(path.fetch("stroke", "none"))
-        fill = ERB::Util.html_escape(path.fetch("fill", "none"))
+        stroke = ERB::Util.html_escape(vector_paint_for_display(path.fetch("stroke", "none")))
+        fill = ERB::Util.html_escape(vector_paint_for_display(path.fetch("fill", "none")))
         stroke_width = path.fetch("stroke_width", 1)
         px0, py0, px1, py1 = path.fetch("bbox")
         lines << <<~HTML
@@ -218,6 +223,54 @@ module BookPlugin
       end
       lines << "</svg>"
       lines.join("\n")
+    end
+
+    def vector_paint_for_display(value)
+      raw = value.to_s.strip
+      return "none" if raw.empty? || VECTOR_PAINT_NONE.include?(raw.downcase)
+      return VECTOR_BLACK if light_vector_paint?(raw)
+
+      raw
+    end
+
+    def light_vector_paint?(raw)
+      s = raw.downcase.gsub(/\s/, "")
+      return true if s == "white"
+      return true if %w[#fff #ffffff].include?(s)
+
+      if (m = s.match(/\Argb\((\d+),(\d+),(\d+)\)\z/))
+        return rgb_triplet_light?(m[1].to_i, m[2].to_i, m[3].to_i)
+      end
+
+      if (m = s.match(/\Argba\((\d+),(\d+),(\d+),([\d.]+)\)\z/))
+        a = m[4].to_f
+        return false if a <= 0.01
+
+        return rgb_triplet_light?(m[1].to_i, m[2].to_i, m[3].to_i)
+      end
+
+      if (m = s.match(/\A#([0-9a-f]{3})\z/))
+        return hex_channels_light?([m[1][0], m[1][1], m[1][2]].map { |c| (c + c).to_i(16) })
+      end
+
+      if (m = s.match(/\A#([0-9a-f]{6})\z/))
+        h = m[1]
+        return hex_channels_light?([h[0, 2], h[2, 2], h[4, 2]].map { |pair| pair.to_i(16) })
+      end
+
+      if (m = s.match(/\Ahsl\((\d+),(\d+)%,(\d+)%\)\z/))
+        return m[3].to_i >= 95
+      end
+
+      false
+    end
+
+    def rgb_triplet_light?(r, g, b)
+      r >= 245 && g >= 245 && b >= 245
+    end
+
+    def hex_channels_light?(channels)
+      rgb_triplet_light?(*channels)
     end
 
     def fmt_num(value)

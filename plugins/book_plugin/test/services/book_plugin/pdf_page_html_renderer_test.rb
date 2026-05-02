@@ -51,6 +51,36 @@ module BookPlugin
       end
     end
 
+    test "remaps white vector paint to black for visibility on white page" do
+      layout = [
+        {
+          "type" => "vector",
+          "bbox" => [0, 0, 10, 10],
+          "paths" => [
+            {
+              "d" => "M 0 0 L 9 9",
+              "stroke" => "rgb(255, 255, 255)",
+              "stroke_width" => 1,
+              "fill" => "none",
+              "bbox" => [0, 0, 9, 9]
+            }
+          ]
+        }
+      ]
+
+      html = PdfPageHtmlRenderer.render(
+        layout: layout,
+        width: 10,
+        height: 10,
+        scale: 1,
+        area: nil,
+        load_js: false
+      )
+
+      assert_includes html, 'stroke="#000000"'
+      assert_includes html, 'fill="none"'
+    end
+
     test "renders image from active storage blob id" do
       blob = ActiveStorage::Blob.create_and_upload!(
         io: StringIO.new(PNG_1X1),
