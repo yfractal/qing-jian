@@ -2,8 +2,9 @@
 ENV["RAILS_ENV"] = "test"
 
 require_relative "../test/dummy/config/environment"
+# Only dummy app migrations participate in maintain_test_schema!; engine tables are
+# defined in dummy/db/schema.rb (engine migrations are not copied into dummy/db/migrate).
 ActiveRecord::Migrator.migrations_paths = [ File.expand_path("../test/dummy/db/migrate", __dir__) ]
-ActiveRecord::Migrator.migrations_paths << File.expand_path("../db/migrate", __dir__)
 require "rails/test_help"
 
 # Load fixtures from the engine

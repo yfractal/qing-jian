@@ -41,6 +41,18 @@ module BookPlugin
       assert_select "iframe.book-html-preview-frame[srcdoc*='Cached page 3']"
     end
 
+    test "new with page number includes flash card preview parent script" do
+      book = create_book_with_pdf
+      BookHtml.create!(book:, page_number: 3, layout: sample_layout("Cached page 3"))
+
+      get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 3 }
+
+      assert_response :success
+      assert_select 'script[src*="flash_card_preview_parent"]'
+      assert_select "textarea#flash_card_areas_to_show"
+      assert_select "textarea#flash_card_items_to_remember_text"
+    end
+
     test "new with page number cache miss calls finder" do
       book = create_book_with_pdf
       finder_called = false

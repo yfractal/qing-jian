@@ -1,6 +1,7 @@
 <% content_for :title, "Create Flash Card" %>
 <% content_for :head do %>
   <%= stylesheet_link_tag "book_plugin/books", "data-turbo-track": "reload" %>
+  <%= javascript_include_tag "book_plugin/flash_card_preview_parent", defer: true %>
 <% end %>
 
 <main class="remember-page books-page">
