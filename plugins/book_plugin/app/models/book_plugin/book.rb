@@ -3,6 +3,7 @@ module BookPlugin
     has_one_attached :file
     has_many :book_htmls, dependent: :destroy
     has_many :flash_cards, dependent: :destroy
+    has_many :flash_card_recall_records, through: :flash_cards, source: :recall_records
 
     validates :title, presence: true
     validate :file_must_be_attached

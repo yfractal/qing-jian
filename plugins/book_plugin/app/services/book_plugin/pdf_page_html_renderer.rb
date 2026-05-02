@@ -2,12 +2,13 @@
 
 require "erb"
 require_relative "pdf_selection_script"
+require_relative "pdf_flash_card_study_script"
 
 module BookPlugin
   class PdfPageHtmlRenderer
     class << self
       def render(layout:, width:, height:, scale: 1.5, area: nil, load_js: true,
-                 areas_to_show: nil, items_to_remember: nil)
+                 mode: :authoring, areas_to_show: nil, items_to_remember: nil)
         new(
           layout: layout,
           width: width,
@@ -15,6 +16,7 @@ module BookPlugin
           scale: scale,
           area: area,
           load_js: load_js,
+          mode: mode,
           areas_to_show: areas_to_show,
           items_to_remember: items_to_remember
         ).render
@@ -27,13 +29,14 @@ module BookPlugin
     VECTOR_BLACK = "#000000"
 
     def initialize(layout:, width:, height:, scale:, area:, load_js: true,
-                   areas_to_show: nil, items_to_remember: nil)
+                   mode: :authoring, areas_to_show: nil, items_to_remember: nil)
       @layout = layout
       @width = width.to_f
       @height = height.to_f
       @scale = scale.to_f
       @area = area
       @load_js = load_js
+      @mode = mode.to_sym
       @areas_to_show = areas_to_show || {}
       @items_to_remember = items_to_remember
     end
@@ -176,6 +179,23 @@ module BookPlugin
             background: rgba(255, 208, 0, 0.45);
             outline: 1px solid rgba(255, 166, 0, 0.9);
         }
+
+        .flash-card-hidden-recall-item {
+            color: transparent !important;
+            text-shadow: none !important;
+            background: rgba(31, 41, 55, 0.16);
+            border-radius: 4px;
+        }
+
+        .flash-card-next-recall-item {
+            outline: 2px solid #f59e0b;
+            background: rgba(245, 158, 11, 0.22);
+        }
+
+        .flash-card-revealed-recall-item {
+            background: rgba(34, 197, 94, 0.22);
+            border-radius: 4px;
+        }
         </style>
         </head>
         <body>
@@ -183,6 +203,8 @@ module BookPlugin
     end
 
     def toolbar_and_page_open
+      return '<div class="page">' if @mode == :study
+
       initial_area = resolved_initial_area_pdf
       text_btn_class = initial_area.nil? ? ' class="is-active"' : ""
       area_btn_class = initial_area.present? ? ' class="is-active"' : ""
@@ -335,7 +357,8 @@ module BookPlugin
     def document_close
       chunks = []
       if @load_js
-        js = PdfSelectionScript.build(
+        script_builder = @mode == :study ? PdfFlashCardStudyScript : PdfSelectionScript
+        js = script_builder.build(
           scale: @scale,
           initial_area: resolved_initial_area_pdf,
           initial_picked_text_groups: picked_text_groups_for_script

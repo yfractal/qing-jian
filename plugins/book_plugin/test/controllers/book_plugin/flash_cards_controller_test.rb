@@ -179,6 +179,16 @@ module BookPlugin
       assert_redirected_to "/books/books/#{book.id}"
     end
 
+    test "index links to remember flash cards" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+
+      get "/books/books/#{book.id}/flash_cards"
+
+      assert_response :success
+      assert_select "a[href='/books/books/#{book.id}/flash_cards/remember']", "Remember flash cards"
+    end
+
     test "index lists flash cards for book with edit link" do
       book = Book.new(title: "Book")
       book.save!(validate: false)

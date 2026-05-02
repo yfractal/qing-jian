@@ -23,5 +23,26 @@ module BookPlugin
       assert_equal({}, card.areas_to_show)
       assert_equal([], card.items_to_remember)
     end
+
+    test "creates initial recall state" do
+      book = Book.new(title: "B")
+      book.save!(validate: false)
+
+      html = BookHtml.create!(
+        book:,
+        page_number: 1,
+        layout: {
+          "width" => 100.0,
+          "height" => 200.0,
+          "items" => [
+            { "type" => "text", "text" => "chunk", "bbox" => [10, 20, 50, 35], "font_size" => 12 }
+          ]
+        }
+      )
+      card = FlashCard.create!(book:, book_html: html)
+
+      assert_equal 0, card.recall_state.remember_times
+      assert_equal card.created_at.to_date, card.recall_state.due_day
+    end
   end
 end

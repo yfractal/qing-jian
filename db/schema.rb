@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_02_102000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_02_204100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -57,6 +57,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_02_102000) do
     t.text "description"
     t.string "title", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "book_plugin_flash_card_recall_records", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "flash_card_id", null: false
+    t.boolean "is_correct", null: false
+    t.datetime "updated_at", null: false
+    t.index ["flash_card_id"], name: "index_book_plugin_flash_card_recall_records_on_flash_card_id"
+  end
+
+  create_table "book_plugin_flash_card_recall_states", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "due_day"
+    t.bigint "flash_card_id", null: false
+    t.integer "remember_times", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["due_day"], name: "index_book_plugin_flash_card_recall_states_on_due_day"
+    t.index ["flash_card_id"], name: "index_book_plugin_flash_card_recall_states_on_flash_card_id", unique: true
   end
 
   create_table "book_plugin_flash_cards", force: :cascade do |t|
@@ -120,6 +138,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_02_102000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "book_plugin_book_htmls", "book_plugin_books", column: "book_id"
+  add_foreign_key "book_plugin_flash_card_recall_records", "book_plugin_flash_cards", column: "flash_card_id"
+  add_foreign_key "book_plugin_flash_card_recall_states", "book_plugin_flash_cards", column: "flash_card_id"
   add_foreign_key "book_plugin_flash_cards", "book_plugin_book_htmls", column: "book_html_id"
   add_foreign_key "book_plugin_flash_cards", "book_plugin_books", column: "book_id"
   add_foreign_key "similar_words", "word_questions"

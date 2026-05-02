@@ -1,0 +1,78 @@
+<% content_for :title, "Remember Flash Cards · #{@book.title}" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "book_plugin/books", "data-turbo-track": "reload" %>
+  <%= javascript_include_tag "book_plugin/flash_card_remember", defer: true %>
+<% end %>
+
+<main class="remember-page books-page flash-card-remember-page">
+  <header class="remember-header">
+    <div>
+      <p class="eyebrow">Daily Review</p>
+      <h1>Remember Flash Cards</h1>
+      <p><%= @book.title %></p>
+    </div>
+    <div class="remember-header-actions">
+      <%= link_to "Back to flash cards", book_flash_cards_path(@book), class: "button button-secondary" %>
+      <%= link_to "Back to book", book_path(@book), class: "button button-secondary" %>
+    </div>
+  </header>
+
+  <section class="remember-progress-card">
+    <p class="eyebrow">Remember Progress</p>
+    <p class="remember-progress-main">Remembered <%= @remembered_count %> / <%= @remember_total_count %></p>
+    <p class="remember-progress-meta">Need to remember <%= @remaining_count %></p>
+    <div class="remember-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= @progress_percent %>">
+      <div class="remember-progress-fill" style="width: <%= @progress_percent %>%"></div>
+    </div>
+  </section>
+
+  <% if @flash_card.present? %>
+    <section class="recall-card flash-card-study-card">
+      <% if result_state? %>
+        <% remembered = @flash_card_recall_record.correct? %>
+        <div class="feedback-panel <%= remembered ? "feedback-panel-correct" : "feedback-panel-incorrect" %>">
+          <p class="feedback-label"><%= remembered ? "Remembered" : "Review again" %></p>
+          <p class="feedback-copy">
+            <%= remembered ? "Nice. This flash card will follow the recall schedule." : "This flash card will stay due and appear again later." %>
+          </p>
+        </div>
+
+        <div class="actions">
+          <%= link_to "Next flash card", @next_flash_card_path, class: "button button-primary button-large" %>
+        </div>
+      <% else %>
+        <p class="question-helper">Try to recall each hidden item before revealing it.</p>
+        <iframe
+          class="book-html-preview-frame flash-card-study-frame"
+          data-flash-card-study-frame
+          sandbox="allow-scripts"
+          title="Flash card study preview"
+          srcdoc="<%= h(@flash_card.book_html.rendered_html(flash_card: @flash_card, mode: :study)) %>"></iframe>
+
+        <div class="flash-card-reveal-actions">
+          <button type="button" class="button button-secondary button-large" data-flash-card-reveal-next>
+            Reveal next item
+          </button>
+          <p class="flash-card-reveal-progress" data-flash-card-reveal-progress></p>
+        </div>
+
+        <%= form_with model: @flash_card_recall_record, url: book_flash_card_recall_records_path(@book), class: "answer-form" do |form| %>
+          <%= hidden_field_tag :reviewed_flash_card_ids, @reviewed_flash_card_ids.join(",") if @reviewed_flash_card_ids.present? %>
+          <%= form.hidden_field :flash_card_id, value: @flash_card.id %>
+
+          <div class="actions">
+            <%= form.button "I remembered it", name: "flash_card_recall_record[is_correct]", value: "true", type: "submit", class: "button button-primary button-large" %>
+            <%= form.button "Review again", name: "flash_card_recall_record[is_correct]", value: "false", type: "submit", class: "button button-secondary button-large" %>
+          </div>
+        <% end %>
+      <% end %>
+    </section>
+  <% else %>
+    <section class="completion-card">
+      <p class="eyebrow">Daily Review</p>
+      <h2>All caught up</h2>
+      <p>You have recalled all flash cards due today.</p>
+      <%= link_to "Create flash card", new_book_flash_card_path(@book), class: "button button-primary" %>
+    </section>
+  <% end %>
+</main>
