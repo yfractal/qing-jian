@@ -6,14 +6,16 @@ module BookPlugin
     validates :page_number, presence: true, uniqueness: { scope: :book_id }
     validate :layout_structure
 
-    def rendered_html(scale: 1.5, area: nil, load_js: true)
+    def rendered_html(scale: 1.5, area: nil, load_js: true, flash_card: nil)
       PdfPageHtmlRenderer.render(
         layout: layout.fetch("items"),
         width: layout.fetch("width"),
         height: layout.fetch("height"),
         scale:,
         area:,
-        load_js:
+        load_js:,
+        areas_to_show: flash_card&.areas_to_show,
+        items_to_remember: flash_card&.items_to_remember
       )
     end
 
