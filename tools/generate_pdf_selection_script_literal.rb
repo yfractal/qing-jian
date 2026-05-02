@@ -9,7 +9,7 @@ require "pathname"
 
 ROOT = Pathname.new(__dir__).join("..").expand_path
 OUT_JS = ROOT.join(
-  "plugins/book_plugin/app/services/book_plugin/pdf_selection_script.js.txt"
+  "plugins/book_plugin/app/services/book_plugin/pdf_selection_script.js"
 )
 
 cmd = [

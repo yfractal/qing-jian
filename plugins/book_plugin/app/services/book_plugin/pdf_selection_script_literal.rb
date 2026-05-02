@@ -5,7 +5,7 @@ module BookPlugin
     class << self
       def body
         @body ||= File.read(
-          File.join(__dir__, "pdf_selection_script.js.txt"),
+          File.join(__dir__, "pdf_selection_script.js"),
           encoding: Encoding::UTF_8
         )
       end
