@@ -4,7 +4,7 @@ require "tmpdir"
 
 module BookPlugin
   class PdfHtmlExtractor
-    Result = Struct.new(:html, :error_message, keyword_init: true) do
+    Result = Struct.new(:html, :images, :error_message, keyword_init: true) do
       def success?
         error_message.nil?
       end
@@ -13,11 +13,11 @@ module BookPlugin
     DEFAULT_TIMEOUT_SECONDS = 30
 
     class << self
-      def call(pdf_path:, page_number:, timeout_seconds: DEFAULT_TIMEOUT_SECONDS, scale: 1.5, area: nil)
+      def call(pdf_path:, page_number:, timeout_seconds: DEFAULT_TIMEOUT_SECONDS, scale: 1.5, area: nil, load_js: false)
         normalized_page_number = normalize_page_number(page_number)
         return failure("Page number must be an integer greater than or equal to 1") unless normalized_page_number
 
-        Dir.mktmpdir("book-plugin-layout-") do |output_dir|
+        Dir.mktmpdir("book-plugin-extract") do |workdir|
           command = [
             "python3",
             layout_extractor_script_path,
@@ -25,7 +25,7 @@ module BookPlugin
             "--page",
             (normalized_page_number - 1).to_s,
             "--output-dir",
-            output_dir
+            workdir
           ]
 
           stdout, stderr, status, timed_out = execute_command(command:, timeout_seconds:)
@@ -47,11 +47,13 @@ module BookPlugin
             width: width,
             height: height,
             scale: scale,
-            area: area
+            area: area,
+            load_js: load_js
           )
           return failure("Extractor produced empty HTML output") if html.strip.empty?
 
-          Result.new(html:, error_message: nil)
+          images = build_images_payload(html, workdir)
+          Result.new(html:, images:, error_message: nil)
         end
       rescue StandardError => e
         failure("Extractor failed: #{e.message}")
@@ -66,6 +68,23 @@ module BookPlugin
         nil
       rescue JSON::ParserError, TypeError
         nil
+      end
+
+      def build_images_payload(html, workdir)
+        base = File.expand_path(workdir)
+        paths = []
+        html.scan(/<img[^>]+src=["']([^"']+)["']/i) do |m|
+          raw = m[0]
+          next if raw.start_with?("data:", "http://", "https://", "/rails/active_storage")
+
+          path = File.absolute_path(raw, workdir)
+          next unless path.start_with?(base + File::SEPARATOR) && File.file?(path)
+
+          paths << path
+        end
+        paths.uniq.map do |path|
+          { filename: File.basename(path), data: File.binread(path) }
+        end
       end
 
       def execute_command(command:, timeout_seconds:)
@@ -103,7 +122,7 @@ module BookPlugin
       end
 
       def failure(message)
-        Result.new(html: nil, error_message: message)
+        Result.new(html: nil, images: [], error_message: message)
       end
 
       def normalize_page_number(page_number)

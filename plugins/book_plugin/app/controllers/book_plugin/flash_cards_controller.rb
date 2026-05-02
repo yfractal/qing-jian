@@ -53,22 +53,26 @@ module BookPlugin
       @book.book_htmls.create_or_find_by!(page_number:) do |book_html|
         book_html.html = extraction_result.html
       end
+
+      book_html = @book.book_htmls.find_by!(page_number:)
+      BookHtmlImageImporter.call(book_html:, extraction_result:)
+      book_html
     rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid
       @book.book_htmls.find_by(page_number:)
     end
 
     def extract_page_html(page_number)
       unless page_number.is_a?(Integer) && page_number >= 1
-        return PdfHtmlExtractor::Result.new(html: nil, error_message: "Page number must be an integer greater than or equal to 1")
+        return PdfHtmlExtractor::Result.new(html: nil, images: [], error_message: "Page number must be an integer greater than or equal to 1")
       end
 
-      return PdfHtmlExtractor::Result.new(html: nil, error_message: "Book file is not attached") unless @book.file.attached?
+      return PdfHtmlExtractor::Result.new(html: nil, images: [], error_message: "Book file is not attached") unless @book.file.attached?
 
       @book.file.blob.open do |tempfile|
-        PdfHtmlExtractor.call(pdf_path: tempfile.path, page_number: page_number)
+        PdfHtmlExtractor.call(pdf_path: tempfile.path, page_number: page_number, load_js: false)
       end
     rescue StandardError => e
-      PdfHtmlExtractor::Result.new(html: nil, error_message: e.message)
+      PdfHtmlExtractor::Result.new(html: nil, images: [], error_message: e.message)
     end
 
     def flash_card_params

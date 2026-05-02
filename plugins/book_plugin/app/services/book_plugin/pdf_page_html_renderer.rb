@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "base64"
 require "erb"
 require "securerandom"
 require_relative "pdf_selection_script"
@@ -8,17 +7,18 @@ require_relative "pdf_selection_script"
 module BookPlugin
   class PdfPageHtmlRenderer
     class << self
-      def render(layout:, width:, height:, scale: 1.5, area: nil)
-        new(layout: layout, width: width, height: height, scale: scale, area: area).render
+      def render(layout:, width:, height:, scale: 1.5, area: nil, load_js: true)
+        new(layout: layout, width: width, height: height, scale: scale, area: area, load_js: load_js).render
       end
     end
 
-    def initialize(layout:, width:, height:, scale:, area:)
+    def initialize(layout:, width:, height:, scale:, area:, load_js: true)
       @layout = layout
       @width = width.to_f
       @height = height.to_f
       @scale = scale.to_f
       @area = area
+      @load_js = load_js
     end
 
     def render
@@ -45,7 +45,7 @@ module BookPlugin
 
       parts << svg_block(vector_paths) if vector_paths.any?
       parts << selection_box_close
-      parts << script_footer
+      parts << document_close
       parts.join("\n")
     end
 
@@ -167,8 +167,7 @@ module BookPlugin
     def image_tag(el, x0, y0, x1, y1, s)
       element_id = "el-#{SecureRandom.hex(16)}"
       path = el.fetch("file")
-      src = image_data_uri(path)
-      src_escaped = ERB::Util.html_escape(src)
+      src_escaped = ERB::Util.html_escape(path)
       <<~HTML
         <img class="image"
             id="#{element_id}"
@@ -181,19 +180,6 @@ module BookPlugin
                 height:#{s.call(y1 - y0)}px;
             ">
       HTML
-    end
-
-    def image_data_uri(path)
-      bytes = File.binread(path)
-      ext = File.extname(path).delete(".").downcase
-      mime =
-        case ext
-        when "jpg", "jpeg" then "image/jpeg"
-        when "png" then "image/png"
-        when "webp" then "image/webp"
-        else "application/octet-stream"
-        end
-      "data:#{mime};base64,#{Base64.strict_encode64(bytes)}"
     end
 
     def svg_block(vector_paths)
@@ -242,15 +228,21 @@ module BookPlugin
       HTML
     end
 
-    def script_footer
-      js = PdfSelectionScript.build(scale: @scale, initial_area: @area)
-      <<~HTML
-        <script>
-        #{js}
-        </script>
+    def document_close
+      chunks = []
+      if @load_js
+        js = PdfSelectionScript.build(scale: @scale, initial_area: @area)
+        chunks << <<~HTML
+          <script>
+          #{js}
+          </script>
+        HTML
+      end
+      chunks << <<~HTML
         </body>
         </html>
       HTML
+      chunks.join("\n")
     end
   end
 end

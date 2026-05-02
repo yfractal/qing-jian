@@ -37,11 +37,13 @@ module BookPlugin
           width: 100,
           height: 200,
           scale: 1.5,
-          area: nil
+          area: nil,
+          load_js: true
         )
 
         assert_includes html, "Hello &lt;world&gt;"
-        assert_includes html, "data:image/png;base64,"
+        assert_includes html, "img_0_0.png"
+        refute_includes html, "data:image/png"
         assert_includes html, "vector-layer"
         assert_includes html, "btn-pick-area"
         assert_includes html, "const SCALE = 1.5;"

@@ -53,13 +53,15 @@ class RememberWordsStatisticsTest < ActiveSupport::TestCase
     assert_equal 2, stats[:active_days_last_30_days]
   end
 
-  test "default heatmap spans full grid and ends on requested day" do
-    stats = RememberWordsStatistics.call(day: Date.new(2026, 6, 15))
+  test "heatmap can span year to date through requested day" do
+    day = Date.new(2026, 6, 15)
+    days = RememberWordsStatistics.year_to_date_days(day)
+    stats = RememberWordsStatistics.call(day: day, days: days)
 
-    assert_equal RememberWordsStatistics::HEATMAP_GRID_DAYS, stats[:daily_review_counts].size
-    assert_equal Date.new(2025, 6, 10), stats[:daily_review_counts].keys.min
-    assert_equal Date.new(2026, 6, 15), stats[:daily_review_counts].keys.max
-    assert_equal stats[:daily_review_counts][Date.new(2026, 6, 15)].to_i, stats[:reviews_today]
+    assert_equal days, stats[:daily_review_counts].size
+    assert_equal Date.new(2026, 1, 1), stats[:daily_review_counts].keys.min
+    assert_equal day, stats[:daily_review_counts].keys.max
+    assert_equal stats[:daily_review_counts][day].to_i, stats[:reviews_today]
   end
 
   test "maps counts into heat levels" do

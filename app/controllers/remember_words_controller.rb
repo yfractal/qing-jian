@@ -30,7 +30,8 @@ class RememberWordsController < ApplicationController
   end
 
   def statistics
-    @stats = RememberWordsStatistics.call(day: Date.current, days: RememberWordsStatistics::HEATMAP_GRID_DAYS)
+    day = Date.current
+    @stats = RememberWordsStatistics.call(day: day, days: RememberWordsStatistics.year_to_date_days(day))
     @heatmap_dates = @stats[:daily_review_counts].keys.sort
   end
 

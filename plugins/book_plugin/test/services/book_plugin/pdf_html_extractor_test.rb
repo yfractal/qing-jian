@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "fileutils"
 
 module BookPlugin
   class PdfHtmlExtractorTest < ActiveSupport::TestCase
@@ -43,6 +44,7 @@ module BookPlugin
         assert_predicate result, :success?
         assert_includes result.html, "Hi"
         assert_includes result.html, "<html>"
+        assert_empty result.images
         assert_nil result.error_message
         assert_equal 30, timeout_value
         assert_equal "python3", command_args[0]
@@ -51,8 +53,85 @@ module BookPlugin
         assert_equal "4", option_value(command_args, "--page")
         idx = command_args.index("--output-dir")
         assert idx, "expected --output-dir in command"
-        assert_match(%r{book-plugin-layout-}, command_args[idx + 1])
+        assert_match(%r{book-plugin-extract}, command_args[idx + 1])
         refute_includes command_args, "--out"
+        refute_includes command_args, "--load-js"
+      end
+    end
+
+    test "returns image payloads when layout includes images under workdir" do
+      status = StatusDouble.new(true, 0, false, nil, true)
+      command_args = nil
+
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
+        command_args = command
+        workdir = command[command.index("--output-dir") + 1]
+        FileUtils.mkdir_p(workdir)
+        img_path = File.join(workdir, "img_0_0.png")
+        File.binwrite(img_path, "fakepng")
+        payload = {
+          "layout" => [
+            {
+              "type" => "image",
+              "file" => img_path,
+              "bbox" => [0, 0, 10, 10]
+            }
+          ],
+          "width" => 100,
+          "height" => 200
+        }
+        [payload.to_json, "", status, false]
+      }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 1, load_js: false)
+
+        assert_predicate result, :success?
+        assert_includes command_args, "--output-dir"
+        assert_equal "0", option_value(command_args, "--page")
+        assert_equal 1, result.images.size
+        assert_equal "img_0_0.png", result.images.first.fetch(:filename)
+        assert_equal "fakepng", result.images.first.fetch(:data)
+      end
+    end
+
+    test "omits script when load_js is false" do
+      status = StatusDouble.new(true, 0, false, nil, true)
+      layout_json = {
+        "layout" => [
+          { "type" => "text", "text" => "Hi", "bbox" => [0, 0, 10, 12], "font_size" => 10 }
+        ],
+        "width" => 100,
+        "height" => 200
+      }.to_json
+
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
+        [layout_json, "", status, false]
+      }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 5, load_js: false)
+
+        assert_predicate result, :success?
+        refute_includes result.html, "<script>"
+        refute_includes result.html, "postMessage"
+      end
+    end
+
+    test "includes script when load_js is true" do
+      status = StatusDouble.new(true, 0, false, nil, true)
+      layout_json = {
+        "layout" => [
+          { "type" => "text", "text" => "Hi", "bbox" => [0, 0, 10, 12], "font_size" => 10 }
+        ],
+        "width" => 100,
+        "height" => 200
+      }.to_json
+
+      with_singleton_stub(PdfHtmlExtractor, :execute_command, lambda { |command:, timeout_seconds:|
+        [layout_json, "", status, false]
+      }) do
+        result = PdfHtmlExtractor.call(pdf_path: "/tmp/book.pdf", page_number: 5, load_js: true)
+
+        assert_predicate result, :success?
+        assert_includes result.html, "<script>"
+        assert_includes result.html, "postMessage"
       end
     end
 
@@ -70,6 +149,7 @@ module BookPlugin
 
         refute_predicate result, :success?
         assert_nil result.html
+        assert_empty result.images
         assert_equal "/tmp/book.pdf", command_args[2]
         assert_equal 30, timeout_value
         assert_match(/exit status 1/, result.error_message)
@@ -91,6 +171,7 @@ module BookPlugin
 
         refute_predicate result, :success?
         assert_nil result.html
+        assert_empty result.images
         assert_equal "/tmp/book.pdf", command_args[2]
         assert_equal 30, timeout_value
         assert_match(/signal 9/, result.error_message)
@@ -112,6 +193,7 @@ module BookPlugin
 
         refute_predicate result, :success?
         assert_nil result.html
+        assert_empty result.images
         assert_equal "/tmp/book.pdf", command_args[2]
         assert_equal 30, timeout_value
         assert_match(/timed out/i, result.error_message)
@@ -145,6 +227,7 @@ module BookPlugin
 
         refute_predicate result, :success?
         assert_nil result.html
+        assert_empty result.images
         assert_equal 30, timeout_value
         assert_match(/invalid json output/i, result.error_message)
       end
@@ -163,6 +246,7 @@ module BookPlugin
 
         refute_predicate result, :success?
         assert_nil result.html
+        assert_empty result.images
         assert_equal "/tmp/book.pdf", command_args[2]
         assert_equal 30, timeout_value
         assert_match(/kaboom/, result.error_message)
@@ -175,6 +259,7 @@ module BookPlugin
 
         refute_predicate result, :success?
         assert_nil result.html
+        assert_empty result.images
         assert_match(/page number must be an integer greater than or equal to 1/i, result.error_message)
       end
     end
@@ -185,6 +270,7 @@ module BookPlugin
 
         refute_predicate result, :success?
         assert_nil result.html
+        assert_empty result.images
         assert_match(/page number must be an integer greater than or equal to 1/i, result.error_message)
       end
     end

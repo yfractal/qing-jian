@@ -1,4 +1,5 @@
 require "test_helper"
+require "base64"
 
 module BookPlugin
   class FlashCardsControllerTest < ActionDispatch::IntegrationTest
@@ -43,16 +44,18 @@ module BookPlugin
       book = create_book_with_pdf
       extractor_called = false
       extractor_page_number = nil
+      extractor_load_js = nil
       pdf_path_present = nil
       pdf_header = nil
 
-      with_singleton_stub(PdfHtmlExtractor, :call, lambda { |pdf_path:, page_number:, **|
+      with_singleton_stub(PdfHtmlExtractor, :call, lambda { |pdf_path:, page_number:, load_js:, **|
         extractor_called = true
         extractor_page_number = page_number
+        extractor_load_js = load_js
         pdf_path_present = File.exist?(pdf_path)
         pdf_header = File.binread(pdf_path, 8)
 
-        PdfHtmlExtractor::Result.new(html: "<article>Extracted HTML for page 3</article>", error_message: nil)
+        PdfHtmlExtractor::Result.new(html: "<article>Extracted HTML for page 3</article>", images: [], error_message: nil)
       }) do
         get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 3 }
       end
@@ -60,6 +63,7 @@ module BookPlugin
       assert_response :success
       assert_equal true, extractor_called
       assert_equal 3, extractor_page_number
+      assert_equal false, extractor_load_js
       assert_equal true, pdf_path_present
       assert_equal "%PDF-1.4", pdf_header
       assert_equal 1, BookHtml.where(book:, page_number: 3).count
@@ -70,7 +74,7 @@ module BookPlugin
       book = create_book_with_pdf
 
       with_singleton_stub(PdfHtmlExtractor, :call, lambda { |**|
-        PdfHtmlExtractor::Result.new(html: nil, error_message: "boom")
+        PdfHtmlExtractor::Result.new(html: nil, images: [], error_message: "boom")
       }) do
         assert_no_difference("BookHtml.count") do
           get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 7 }
@@ -119,7 +123,7 @@ module BookPlugin
           page_number: 8,
           html: "<article>Concurrent HTML for page 8</article>"
         )
-        PdfHtmlExtractor::Result.new(html: "<article>Late extractor HTML</article>", error_message: nil)
+        PdfHtmlExtractor::Result.new(html: "<article>Late extractor HTML</article>", images: [], error_message: nil)
       }) do
         get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 8 }
       end
@@ -127,6 +131,31 @@ module BookPlugin
       assert_response :success
       assert_equal 1, BookHtml.where(book:, page_number: 8).count
       assert_select "iframe.book-html-preview-frame[srcdoc*='Concurrent HTML for page 8']"
+    end
+
+    test "new persists book html images when extraction returns payloads" do
+      book = create_book_with_pdf
+      png = Base64.decode64(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+      )
+      src = "/var/tmp/img_0_0.png"
+      html = %(<html><body><img src="#{src}"></body></html>)
+
+      with_singleton_stub(PdfHtmlExtractor, :call, lambda { |**|
+        PdfHtmlExtractor::Result.new(
+          html:,
+          images: [{ filename: "img_0_0.png", data: png }],
+          error_message: nil
+        )
+      }) do
+        get "/books/books/#{book.id}/flash_cards/new", params: { page_number: 1 }
+      end
+
+      assert_response :success
+
+      html_record = book.book_htmls.find_by!(page_number: 1)
+      assert_predicate html_record.images, :any?
+      assert_includes html_record.html, "/rails/active_storage/"
     end
 
     test "create persists flash card" do
