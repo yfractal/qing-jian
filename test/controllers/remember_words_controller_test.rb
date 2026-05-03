@@ -5,14 +5,14 @@ require "test_helper"
 class RememberWordsControllerTest < ActionDispatch::IntegrationTest
   include ActiveSupport::Testing::TimeHelpers
 
-  test "root renders remember words index" do
+  test "root renders word flash remember index" do
     get root_url
     assert_response :success
-    assert_select "h1", "Remember Words"
+    assert_select "h1", /Word flash remember/i
   end
 
   test "shows add new word button" do
-    get root_url
+    get multiple_choice_review_url
     assert_response :success
     assert_select "a", "Add new word"
   end
@@ -55,7 +55,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     create_question_for!(first_word)
     create_question_for!(second_word)
 
-    get root_url(recalled_word_ids: first_word.id.to_s)
+    get multiple_choice_review_url(recalled_word_ids: first_word.id.to_s)
 
     assert_response :success
     assert_select ".remember-progress-card"
@@ -80,7 +80,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
         created_at: Time.zone.now
       )
 
-      get root_url
+      get multiple_choice_review_url
 
       assert_response :success
       assert_equal Date.current + 2.days, remembered_word.reload.word_recall_state.due_day
@@ -95,7 +95,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     word.update!(pronunciation: "/test/")
     create_question_for!(word)
 
-    get root_url
+    get multiple_choice_review_url
 
     assert_response :success
     assert_select "h2", word.word
@@ -111,7 +111,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     word = create_due_word!("default_direction")
     create_question_for!(word)
 
-    get root_url
+    get multiple_choice_review_url
 
     assert_response :success
     assert_select "input[type='radio'][name='direction'][value='english_to_chinese'][checked='checked']"
@@ -125,7 +125,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     word.update!(pronunciation: "/explicit/")
     create_question_for!(word)
 
-    get root_url(direction: "chinese_to_english")
+    get multiple_choice_review_url(direction: "chinese_to_english")
 
     assert_response :success
     assert_select "input[type='radio'][name='direction'][value='chinese_to_english'][checked='checked']"
@@ -141,7 +141,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     word = create_due_word!("invalid_direction")
     create_question_for!(word)
 
-    get root_url(direction: "invalid")
+    get multiple_choice_review_url(direction: "invalid")
 
     assert_response :success
     assert_select "input[type='radio'][name='direction'][value='english_to_chinese'][checked='checked']"
@@ -155,7 +155,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     create_question_for!(first_word)
     create_question_for!(second_word)
 
-    get root_url(recalled_word_ids: first_word.id.to_s)
+    get multiple_choice_review_url(recalled_word_ids: first_word.id.to_s)
 
     assert_response :success
     assert_select "h2", second_word.word
@@ -166,9 +166,9 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     word = create_due_word!("retry")
     create_question_for!(word)
 
-    get root_url(recalled_word_ids: word.id.to_s)
+    get multiple_choice_review_url(recalled_word_ids: word.id.to_s)
 
-    assert_redirected_to root_url(direction: "english_to_chinese")
+    assert_redirected_to multiple_choice_review_url(direction: "english_to_chinese")
     assert_equal "Starting another recall pass for words still due.", flash[:notice]
   end
 
@@ -177,9 +177,9 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     word = create_due_word!("retry_chinese_to_english")
     create_question_for!(word)
 
-    get root_url(recalled_word_ids: word.id.to_s, direction: "chinese_to_english")
+    get multiple_choice_review_url(recalled_word_ids: word.id.to_s, direction: "chinese_to_english")
 
-    assert_redirected_to root_url(direction: "chinese_to_english")
+    assert_redirected_to multiple_choice_review_url(direction: "chinese_to_english")
   end
 
   test "clears stale recalled word state when no words are due" do
@@ -188,9 +188,9 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     create_question_for!(word)
     word.word_recall_state.update!(due_day: Date.current + 100.days)
 
-    get root_url(recalled_word_ids: word.id.to_s)
+    get multiple_choice_review_url(recalled_word_ids: word.id.to_s)
 
-    assert_redirected_to root_url(direction: "english_to_chinese")
+    assert_redirected_to multiple_choice_review_url(direction: "english_to_chinese")
     assert_equal "All words recalled for today.", flash[:notice]
   end
 
@@ -201,7 +201,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     create_question_for!(first_word)
     create_question_for!(second_word)
 
-    get root_url(recalled_word_ids: first_word.id.to_s)
+    get multiple_choice_review_url(recalled_word_ids: first_word.id.to_s)
 
     assert_response :success
     assert_select "input[type='hidden'][name='recalled_word_ids'][value='#{first_word.id}']"
@@ -212,7 +212,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     word = create_due_word!("carry_direction")
     create_question_for!(word)
 
-    get root_url(direction: "chinese_to_english")
+    get multiple_choice_review_url(direction: "chinese_to_english")
 
     assert_response :success
     assert_select "input[type='hidden'][name='direction'][value='chinese_to_english']"
@@ -229,7 +229,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
       is_correct: true
     )
 
-    get root_url(result_record_id: record.id)
+    get multiple_choice_review_url(result_record_id: record.id)
 
     assert_response :success
     assert_select ".feedback-panel.feedback-panel-correct", text: /Correct/
@@ -249,7 +249,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
       is_correct: false
     )
 
-    get root_url(result_record_id: record.id)
+    get multiple_choice_review_url(result_record_id: record.id)
 
     assert_response :success
     assert_select ".feedback-panel.feedback-panel-incorrect", text: /Not quite/
@@ -269,7 +269,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
       is_correct: true
     )
 
-    get root_url(direction: "chinese_to_english", result_record_id: record.id)
+    get multiple_choice_review_url(direction: "chinese_to_english", result_record_id: record.id)
 
     assert_response :success
     assert_select "h2", word.chinese_meaning
@@ -288,9 +288,9 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
       is_correct: true
     )
 
-    get root_url(recalled_word_ids: previous_word.id.to_s, result_record_id: record.id)
+    get multiple_choice_review_url(recalled_word_ids: previous_word.id.to_s, result_record_id: record.id)
 
-    expected_path = root_path(
+    expected_path = multiple_choice_review_path(
       direction: "english_to_chinese",
       recalled_word_ids: "#{previous_word.id},#{word.id}"
     )
@@ -306,7 +306,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     word = create_due_word!("invalid_result")
     create_question_for!(word)
 
-    get root_url(result_record_id: "999999")
+    get multiple_choice_review_url(result_record_id: "999999")
 
     assert_response :success
     assert_select "h2", word.word
@@ -352,7 +352,7 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "remember progress card links to today words page" do
-    get root_url
+    get multiple_choice_review_url
 
     assert_response :success
     assert_select "a.remember-progress-card[href='#{today_words_path}']"

@@ -10,7 +10,7 @@ class WordFlashRememberController < ApplicationController
     )
 
     if @reviewed_word_ids.any? && filtered_due_words.none?
-      redirect_to word_flash_remember_path, notice: pass_cleared_notice(due_words)
+      redirect_to root_path, notice: pass_cleared_notice(due_words)
       return
     end
 

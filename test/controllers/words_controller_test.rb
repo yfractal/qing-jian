@@ -211,7 +211,7 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a", text: "All words", count: 0
     assert_select "input[name='_method'][value='delete']", count: 0
     assert_select ".recall-card dl.word-detail ~ div.actions a", text: "Next word"
-    assert_select "a[href=?]", word_flash_remember_path(reviewed_word_ids: ids)
+    assert_select "a[href=?]", root_path(reviewed_word_ids: ids)
   end
 
   test "show without flash_remember keeps edit delete and all words" do

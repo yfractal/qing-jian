@@ -26,7 +26,11 @@
     <%= render "shared/site_nav",
       brand_path: main_app.root_path,
       nav_links: [
-        { label: "Review", path: main_app.root_path, active: request.path == main_app.root_path },
+        {
+          label: "Review",
+          path: main_app.root_path,
+          active: [ "/", "/word_flash_remember", "/review/multiple_choice" ].include?(request.path)
+        },
         { label: "Today", path: main_app.today_words_path, active: request.path == main_app.today_words_path },
         { label: "Words", path: main_app.words_path, active: controller_name == "words" },
         { label: "Statistics", path: main_app.statistics_words_path, active: request.path == main_app.statistics_words_path },

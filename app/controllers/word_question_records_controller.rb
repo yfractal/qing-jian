@@ -38,11 +38,11 @@ class WordQuestionRecordsController < ApplicationController
   end
 
   def root_path_with_state(word_ids)
-    root_path(state_params_for(word_ids))
+    multiple_choice_review_path(state_params_for(word_ids))
   end
 
   def root_path_with_result(record)
-    root_path(state_params_for(recalled_word_ids).merge(result_record_id: record.id))
+    multiple_choice_review_path(state_params_for(recalled_word_ids).merge(result_record_id: record.id))
   end
 
   def state_params_for(word_ids)

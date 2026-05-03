@@ -38,7 +38,7 @@ class WordFlashRememberControllerTest < ActionDispatch::IntegrationTest
     travel_to Time.zone.local(@day.year, @day.month, @day.day, 10, 0, 0) do
       get word_flash_remember_path, params: { reviewed_word_ids: [ @due.id, @other.id ].join(",") }
 
-      assert_redirected_to word_flash_remember_path
+      assert_redirected_to root_url
       assert_match(/another.*pass/i, flash[:notice])
     end
   end

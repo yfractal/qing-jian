@@ -40,7 +40,7 @@ class WordSelfRecallRecordsControllerTest < ActionDispatch::IntegrationTest
              }
       end
 
-      assert_redirected_to word_flash_remember_path
+      assert_redirected_to root_url
       assert_match(/could not save/i, flash[:alert])
     end
   end

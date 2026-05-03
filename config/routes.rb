@@ -10,7 +10,9 @@ Rails.application.routes.draw do
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   # Defines the root path route ("/")
-  root "remember_words#index"
+  root "word_flash_remember#index"
+  get "word_flash_remember", to: "word_flash_remember#index", as: :word_flash_remember
+  get "review/multiple_choice", to: "remember_words#index", as: :multiple_choice_review
   get "today_words", to: "remember_words#today", as: :today_words
   get "words/statistics", to: "remember_words#statistics", as: :statistics_words
 
@@ -22,7 +24,6 @@ Rails.application.routes.draw do
     end
   end
   resources :word_question_records, only: :create
-  get "word_flash_remember", to: "word_flash_remember#index", as: :word_flash_remember
   resources :word_self_recall_records, only: [ :create ]
   mount BookPlugin::Engine => "/books"
 end

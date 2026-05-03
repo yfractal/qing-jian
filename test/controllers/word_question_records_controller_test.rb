@@ -28,7 +28,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
 
     record = WordQuestionRecord.order(:created_at).last
     assert_equal true, record.is_correct
-    assert_redirected_to root_url(direction: "english_to_chinese", result_record_id: record.id)
+    assert_redirected_to multiple_choice_review_url(direction: "english_to_chinese", result_record_id: record.id)
   end
 
   test "creates an incorrect record and redirects to root with result record id" do
@@ -45,7 +45,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
 
     record = WordQuestionRecord.order(:created_at).last
     assert_equal false, record.is_correct
-    assert_redirected_to root_url(direction: "english_to_chinese", result_record_id: record.id)
+    assert_redirected_to multiple_choice_review_url(direction: "english_to_chinese", result_record_id: record.id)
   end
 
   test "preserves existing recalled word ids on successful redirect" do
@@ -64,7 +64,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
     }
 
     record = WordQuestionRecord.order(:created_at).last
-    assert_redirected_to root_url(
+    assert_redirected_to multiple_choice_review_url(
       direction: "english_to_chinese",
       recalled_word_ids: previous_word.id.to_s,
       result_record_id: record.id
@@ -81,7 +81,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
     }
 
     record = WordQuestionRecord.order(:created_at).last
-    assert_redirected_to root_url(
+    assert_redirected_to multiple_choice_review_url(
       direction: "english_to_chinese",
       recalled_word_ids: @word.id.to_s,
       result_record_id: record.id
@@ -105,7 +105,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to root_url(direction: "english_to_chinese", recalled_word_ids: previous_word.id.to_s)
+    assert_redirected_to multiple_choice_review_url(direction: "english_to_chinese", recalled_word_ids: previous_word.id.to_s)
     assert_equal "Could not save answer.", flash[:alert]
   end
 
@@ -119,7 +119,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
     }
 
     record = WordQuestionRecord.order(:created_at).last
-    assert_redirected_to root_url(direction: "english_to_chinese", result_record_id: record.id)
+    assert_redirected_to multiple_choice_review_url(direction: "english_to_chinese", result_record_id: record.id)
   end
 
   test "preserves chinese_to_english direction on failure redirect" do
@@ -131,7 +131,7 @@ class WordQuestionRecordsControllerTest < ActionDispatch::IntegrationTest
       }
     }
 
-    assert_redirected_to root_url(direction: "chinese_to_english")
+    assert_redirected_to multiple_choice_review_url(direction: "chinese_to_english")
     assert_equal "Could not save answer.", flash[:alert]
   end
 end

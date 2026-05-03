@@ -14,7 +14,7 @@ class RememberWordsController < ApplicationController
     filtered_due_words = WordsDueForRecall.call(day: Date.current, excluding_word_ids: @recalled_word_ids)
 
     if @recalled_word_ids.any? && filtered_due_words.none?
-      redirect_to root_path(direction: @direction), notice: pass_cleared_notice(due_words)
+      redirect_to multiple_choice_review_path(direction: @direction), notice: pass_cleared_notice(due_words)
       return
     end
 
@@ -58,7 +58,7 @@ class RememberWordsController < ApplicationController
     @word_question_record = @result_record
     @selected_choice_token = @result_record.picked_choice_token
     @correct_choice = @question.choices.find(&:correct)
-    @next_word_path = root_path(
+    @next_word_path = multiple_choice_review_path(
       direction: @direction,
       recalled_word_ids: (@recalled_word_ids + [ @question.word_id ]).uniq.join(",")
     )

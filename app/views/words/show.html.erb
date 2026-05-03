@@ -9,7 +9,7 @@
         <p class="remember-subtitle">Meanings for this word. Continue the queue when you are ready.</p>
       </div>
       <div class="remember-header-actions">
-        <%= link_to "Multiple choice review", root_path, class: "button button-secondary" %>
+        <%= link_to "Multiple choice review", multiple_choice_review_path, class: "button button-secondary" %>
       </div>
     </header>
 
@@ -44,7 +44,7 @@
 
       <div class="actions">
         <%= link_to "Next word",
-                    word_flash_remember_path(reviewed_word_ids: params[:reviewed_word_ids]),
+                    root_path(reviewed_word_ids: params[:reviewed_word_ids]),
                     class: "button button-primary button-large" %>
       </div>
     </section>

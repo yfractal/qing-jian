@@ -14,7 +14,7 @@ class WordSelfRecallRecordsController < ApplicationController
     ),
       notice: "Review saved."
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound
-    redirect_to word_flash_remember_path(flash_remember_query),
+    redirect_to root_path(flash_remember_query),
       alert: "Could not save review."
   end
 
