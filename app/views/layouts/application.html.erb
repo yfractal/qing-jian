@@ -23,6 +23,19 @@
   </head>
 
   <body>
+    <%= render "shared/site_nav",
+      brand_path: main_app.root_path,
+      nav_links: [
+        { label: "Review", path: main_app.root_path, active: request.path == main_app.root_path },
+        { label: "Today", path: main_app.today_words_path, active: request.path == main_app.today_words_path },
+        { label: "Words", path: main_app.words_path, active: controller_name == "words" },
+        { label: "Statistics", path: main_app.statistics_words_path, active: request.path == main_app.statistics_words_path },
+        { label: "Books", path: "/books", active: request.path.start_with?("/books") }
+      ],
+      nav_actions: [
+        { label: "Add word", path: main_app.new_word_path },
+        { label: "New book", path: "/books/books/new" }
+      ] %>
     <%= yield %>
   </body>
 </html>
