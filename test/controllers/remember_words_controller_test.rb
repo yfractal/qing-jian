@@ -17,6 +17,36 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a", "Add new word"
   end
 
+  test "main app layout renders primary navigation" do
+    get root_url
+
+    assert_response :success
+    assert_select "nav.site-nav[aria-label='Primary navigation']" do
+      assert_select "a.site-nav-brand[href='#{root_path}']", text: /Qing Jian/
+      assert_select "a.site-nav-link.is-active[aria-current='page'][href='#{root_path}']", "Review"
+      assert_select "a.site-nav-link[href='#{today_words_path}']", "Today"
+      assert_select "a.site-nav-link[href='#{words_path}']", "Words"
+      assert_select "a.site-nav-link[href='#{statistics_words_path}']", "Statistics"
+      assert_select "a.site-nav-link[href='/books']", "Books"
+      assert_select "a.site-nav-action[href='#{new_word_path}']", "Add word"
+      assert_select "a.site-nav-action[href='/books/books/new']", "New book"
+    end
+  end
+
+  test "today page marks Today nav link active" do
+    get today_words_url
+
+    assert_response :success
+    assert_select "a.site-nav-link.is-active[aria-current='page'][href='#{today_words_path}']", "Today"
+  end
+
+  test "statistics page marks Statistics nav link active" do
+    get statistics_words_url
+
+    assert_response :success
+    assert_select "a.site-nav-link.is-active[aria-current='page'][href='#{statistics_words_path}']", "Statistics"
+  end
+
   test "progress ignores recalled_word_ids when no correct record exists today" do
     WordRecallState.update_all(due_day: Date.current + 100.days)
     WordQuestionRecord.delete_all

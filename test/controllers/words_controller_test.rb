@@ -51,6 +51,13 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     assert_match words(:cat).word, @response.body
   end
 
+  test "words page marks Words nav link active" do
+    get words_url
+
+    assert_response :success
+    assert_select "a.site-nav-link.is-active[aria-current='page'][href='#{words_path}']", "Words"
+  end
+
   test "should get new" do
     get new_word_url
     assert_response :success

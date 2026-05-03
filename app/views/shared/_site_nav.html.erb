@@ -1,0 +1,29 @@
+<nav class="site-nav" aria-label="Primary navigation">
+  <div class="site-nav-inner">
+    <%= link_to brand_path, class: "site-nav-brand" do %>
+      <span class="site-nav-mark" aria-hidden="true">QJ</span>
+      <span>
+        <span class="site-nav-title">Qing Jian</span>
+        <span class="site-nav-subtitle">Recall daily</span>
+      </span>
+    <% end %>
+
+    <div class="site-nav-links">
+      <% nav_links.each do |item| %>
+        <% link_classes = ["site-nav-link"] %>
+        <% link_classes << "is-active" if item[:active] %>
+        <% if item[:active] %>
+          <%= link_to item[:label], item[:path], class: link_classes.join(" "), "aria-current": "page" %>
+        <% else %>
+          <%= link_to item[:label], item[:path], class: link_classes.join(" ") %>
+        <% end %>
+      <% end %>
+    </div>
+
+    <div class="site-nav-actions">
+      <% nav_actions.each do |item| %>
+        <%= link_to item[:label], item[:path], class: "site-nav-action" %>
+      <% end %>
+    </div>
+  </div>
+</nav>
