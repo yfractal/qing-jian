@@ -13,7 +13,6 @@ Rails.application.routes.draw do
   root "word_flash_remember#index"
   get "word_flash_remember", to: "word_flash_remember#index", as: :word_flash_remember
   get "word_browse", to: "word_browse#index", as: :word_browse
-  post "word_browse/record", to: "word_browse#create_record", as: :word_browse_record
   get "review/multiple_choice", to: "remember_words#index", as: :multiple_choice_review
   get "today_words", to: "remember_words#today", as: :today_words
   get "words/statistics", to: "remember_words#statistics", as: :statistics_words

@@ -417,6 +417,21 @@ input[type="submit"].button {
   line-height: 1.05;
 }
 
+.question-word-with-play {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.question-word-with-play h2 {
+  flex: 0 1 auto;
+}
+
+.question-audio-row-pronunciation-only {
+  margin-top: 0.5rem;
+}
+
 .question-audio-row {
   margin-top: 0.75rem;
   display: flex;
@@ -921,14 +936,4 @@ input[type="submit"].button-large {
   gap: 1rem;
   margin-top: 1.5rem;
   flex-wrap: wrap;
-}
-
-.browse-record-form {
-  display: flex;
-  justify-content: center;
-}
-
-.browse-record-buttons {
-  display: flex;
-  gap: 0.75rem;
 }
