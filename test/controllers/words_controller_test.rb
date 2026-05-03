@@ -201,6 +201,29 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     assert_match words(:cat).word, @response.body
   end
 
+  test "show with flash_remember uses remember layout and hides management links" do
+    w = words(:cat)
+    ids = w.id.to_s
+    get word_url(w, params: { flash_remember: "1", reviewed_word_ids: ids })
+    assert_response :success
+    assert_select "main.remember-page.word-show-flash-remember-page"
+    assert_select "a[href=?]", edit_word_path(w), count: 0
+    assert_select "a", text: "All words", count: 0
+    assert_select "input[name='_method'][value='delete']", count: 0
+    assert_select ".recall-card dl.word-detail ~ div.actions a", text: "Next word"
+    assert_select "a[href=?]", word_flash_remember_path(reviewed_word_ids: ids)
+  end
+
+  test "show without flash_remember keeps edit delete and all words" do
+    w = words(:cat)
+    get word_url(w)
+    assert_response :success
+    assert_select "a", text: "Edit"
+    assert_select "button", text: "Delete"
+    assert_select "a", text: "All words"
+    assert_select "main.remember-page", count: 0
+  end
+
   test "should get edit" do
     get edit_word_url(words(:cat))
     assert_response :success
