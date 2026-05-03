@@ -22,5 +22,7 @@ Rails.application.routes.draw do
     end
   end
   resources :word_question_records, only: :create
+  get "word_flash_remember", to: "word_flash_remember#index", as: :word_flash_remember
+  resources :word_self_recall_records, only: [ :create ]
   mount BookPlugin::Engine => "/books"
 end

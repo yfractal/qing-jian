@@ -1,0 +1,95 @@
+<% content_for :title, "Word flash remember" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "book_plugin/books", "data-turbo-track": "reload" %>
+<% end %>
+
+<main class="remember-page books-page flash-card-remember-page word-flash-remember-page">
+  <header class="remember-header">
+    <div>
+      <p class="eyebrow">Daily Review</p>
+      <h1>Word flash remember</h1>
+      <p>Recall the meaning, then rate how well you remembered.</p>
+    </div>
+    <div class="remember-header-actions">
+      <%= link_to "Multiple choice review", root_path, class: "button button-secondary" %>
+      <%= link_to "All words", words_path, class: "button button-secondary" %>
+    </div>
+  </header>
+
+  <section class="remember-progress-card">
+    <p class="eyebrow">Remember Progress</p>
+    <p class="remember-progress-main">Remembered <%= @remembered_count %> / <%= @remember_total_count %></p>
+    <p class="remember-progress-meta">Need to remember <%= @remaining_count %></p>
+    <div class="remember-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= @progress_percent %>">
+      <div class="remember-progress-fill" style="width: <%= @progress_percent %>%"></div>
+    </div>
+  </section>
+
+  <% if @word.present? %>
+    <section class="recall-card flash-card-study-card">
+      <section class="recall-layout" aria-label="Word flash study">
+        <div class="recall-main">
+          <p class="question-helper">Do you remember this word?</p>
+          <h2><%= @word.word %></h2>
+          <div class="question-audio-row">
+            <span class="question-audio-pronunciation"><%= @word.pronunciation.presence || "—" %></span>
+            <button
+              type="button"
+              class="button button-secondary pronunciation-play pronunciation-icon-button"
+              aria-label="Play sound"
+              title="Play sound"
+              data-pronunciation-play
+              data-word-text="<%= @word.word %>">
+              &#128266;
+            </button>
+          </div>
+        </div>
+
+        <aside class="recall-sidebar">
+          <%= form_with model: @word_self_recall_record, url: word_self_recall_records_path, class: "answer-form recall-panel-form" do |form| %>
+            <%= hidden_field_tag :reviewed_word_ids, @reviewed_word_ids.join(",") if @reviewed_word_ids.present? %>
+            <%= form.hidden_field :word_id, value: @word.id %>
+
+            <div class="recall-panel">
+              <div class="recall-panel-title">Your answer</div>
+              <%= form.button "Remember this",
+                              name: "word_self_recall_record[is_correct]",
+                              value: "true",
+                              type: "submit",
+                              class: "recall-btn recall-btn-success" %>
+              <%= form.button "Don't remember this",
+                              name: "word_self_recall_record[is_correct]",
+                              value: "false",
+                              type: "submit",
+                              class: "recall-btn recall-btn-secondary" %>
+            </div>
+          <% end %>
+        </aside>
+      </section>
+    </section>
+  <% else %>
+    <section class="completion-card">
+      <p class="eyebrow">Daily Review</p>
+      <h2>All caught up</h2>
+      <p>You have recalled all words due today.</p>
+      <%= link_to "Add new word", new_word_path, class: "button button-primary" %>
+    </section>
+  <% end %>
+</main>
+
+<script>
+  document.addEventListener("click", function(event) {
+    const button = event.target.closest("[data-pronunciation-play]");
+    if (!button) return;
+
+    const text = (button.dataset.wordText || "").trim();
+    if (!text) return;
+
+    if (window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+  });
+</script>

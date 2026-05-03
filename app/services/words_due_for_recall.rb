@@ -30,7 +30,9 @@ class WordsDueForRecall
     def update_state_for(record)
       return unless record.correct?
 
-      word = record.word_question.word
+      word = recall_word_for(record)
+      return unless word
+
       state = WordRecallState.find_or_initialize_by(word: word)
       state.remember_times ||= 0
       state.due_day ||= word.created_at.to_date
@@ -45,6 +47,15 @@ class WordsDueForRecall
     end
 
     private
+
+    def recall_word_for(record)
+      case record
+      when WordQuestionRecord
+        record.word_question.word
+      when WordSelfRecallRecord
+        record.word
+      end
+    end
 
     def normalize_word_ids(word_ids)
       Array(word_ids).filter_map do |word_id|
