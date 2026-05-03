@@ -136,7 +136,7 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
     assert_match(/Invalid JSON from OpenRouter/, error.message)
   end
 
-  test "default model is deepseek v4 pro when env model unset" do
+  test "default model is deepseek v4 flash when env model unset" do
     captured = nil
     response = OpenStruct.new(code: "200", body: JSON.generate(@valid_outer))
     old_model = ENV.fetch("OPENROUTER_MODEL", nil)
@@ -150,7 +150,7 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
     )
 
     client.similar_words("x")
-    assert_equal "deepseek/deepseek-v4-pro", captured["model"]
+    assert_equal "deepseek/deepseek-v4-flash", captured["model"]
   ensure
     ENV["OPENROUTER_MODEL"] = old_model if old_model
   end
@@ -171,7 +171,7 @@ class OpenRouterSimilarWordsClientTest < ActiveSupport::TestCase
 
     logs = log_output.string
     assert_match(/llm\.request\.start/, logs)
-    assert_match(/model=deepseek\/deepseek-v4-pro/, logs)
+    assert_match(/model=deepseek\/deepseek-v4-flash/, logs)
     assert_match(/prompt=/, logs)
     assert_match(/llm\.request\.finish/, logs)
     assert_match(/end_time=/, logs)

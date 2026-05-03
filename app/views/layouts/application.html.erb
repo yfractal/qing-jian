@@ -32,6 +32,7 @@
           active: [ "/", "/word_flash_remember", "/review/multiple_choice" ].include?(request.path)
         },
         { label: "Today", path: main_app.today_words_path, active: request.path == main_app.today_words_path },
+        { label: "Browse", path: main_app.word_browse_path, active: request.path == main_app.word_browse_path },
         { label: "Words", path: main_app.words_path, active: controller_name == "words" },
         { label: "Statistics", path: main_app.statistics_words_path, active: request.path == main_app.statistics_words_path },
         { label: "Books", path: "/books", active: request.path.start_with?("/books") }
