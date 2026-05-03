@@ -42,11 +42,6 @@
         <dd><%= simple_format(@word.chinese_meaning) %></dd>
       </dl>
 
-      <div class="feedback-panel word-flash-followup">
-        <p class="feedback-label">Review</p>
-        <p class="feedback-copy">Here are the meanings. Continue when you are ready.</p>
-      </div>
-
       <div class="actions">
         <%= link_to "Next word",
                     word_flash_remember_path(reviewed_word_ids: params[:reviewed_word_ids]),
