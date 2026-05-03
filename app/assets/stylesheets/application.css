@@ -268,6 +268,13 @@ input[type="submit"].button {
   flex-wrap: wrap;
 }
 
+.remember-header .remember-subtitle {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.95rem;
+  max-width: 36rem;
+}
+
 .eyebrow {
   margin: 0 0 0.25rem;
   color: #64748b;
