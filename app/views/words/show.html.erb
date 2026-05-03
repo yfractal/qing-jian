@@ -1,32 +1,93 @@
 <% content_for :title, @word.word %>
 
-<h1><%= @word.word %></h1>
-
-<% if flash[:notice].present? %>
-  <p class="flash flash-notice"><%= flash[:notice] %></p>
-<% end %>
-
 <% if params[:flash_remember].present? %>
-  <div class="feedback-panel word-flash-followup">
-    <p class="feedback-label">Review</p>
-    <p class="feedback-copy">Here are the meanings. Continue when you are ready.</p>
-    <div class="actions">
-      <%= link_to "Next word",
-                  word_flash_remember_path(reviewed_word_ids: params[:reviewed_word_ids]),
-                  class: "button button-primary button-large" %>
-    </div>
-  </div>
+  <main class="remember-page word-show-flash-remember-page">
+    <header class="remember-header">
+      <div>
+        <p class="eyebrow">Daily Review</p>
+        <h1>Word flash remember</h1>
+        <p class="remember-subtitle">Meanings for this word. Continue the queue when you are ready.</p>
+      </div>
+      <div class="remember-header-actions">
+        <%= link_to "Multiple choice review", root_path, class: "button button-secondary" %>
+      </div>
+    </header>
+
+    <% if flash[:notice].present? %>
+      <p class="flash flash-notice"><%= flash[:notice] %></p>
+    <% end %>
+
+    <section class="recall-card word-show-flash-reveal-card" aria-label="Word meanings">
+      <div class="question-block">
+        <p class="question-helper">Word</p>
+        <h2><%= @word.word %></h2>
+        <div class="question-audio-row">
+          <span class="question-audio-pronunciation"><%= @word.pronunciation.presence || "—" %></span>
+          <button
+            type="button"
+            class="button button-secondary pronunciation-play pronunciation-icon-button"
+            aria-label="Play sound"
+            title="Play sound"
+            data-pronunciation-play
+            data-word-text="<%= @word.word %>">
+            &#128266;
+          </button>
+        </div>
+      </div>
+
+      <dl class="word-detail">
+        <dt>English meaning</dt>
+        <dd><%= simple_format(@word.english_meaning) %></dd>
+        <dt>Chinese meaning</dt>
+        <dd><%= simple_format(@word.chinese_meaning) %></dd>
+      </dl>
+
+      <div class="feedback-panel word-flash-followup">
+        <p class="feedback-label">Review</p>
+        <p class="feedback-copy">Here are the meanings. Continue when you are ready.</p>
+      </div>
+
+      <div class="actions">
+        <%= link_to "Next word",
+                    word_flash_remember_path(reviewed_word_ids: params[:reviewed_word_ids]),
+                    class: "button button-primary button-large" %>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener("click", function(event) {
+      const button = event.target.closest("[data-pronunciation-play]");
+      if (!button) return;
+
+      const text = (button.dataset.wordText || "").trim();
+      if (!text) return;
+
+      if (window.speechSynthesis) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+      }
+    });
+  </script>
+<% else %>
+  <h1><%= @word.word %></h1>
+
+  <% if flash[:notice].present? %>
+    <p class="flash flash-notice"><%= flash[:notice] %></p>
+  <% end %>
+
+  <dl class="word-detail">
+    <dt>English meaning</dt>
+    <dd><%= simple_format(@word.english_meaning) %></dd>
+    <dt>Chinese meaning</dt>
+    <dd><%= simple_format(@word.chinese_meaning) %></dd>
+  </dl>
+
+  <p class="actions">
+    <%= link_to "Edit", edit_word_path(@word), class: "button button-primary" %>
+    <%= button_to "Delete", word_path(@word), method: :delete, class: "button button-danger", form: { data: { turbo_confirm: "Delete this word?" } } %>
+    <%= link_to "All words", words_path, class: "button button-secondary" %>
+  </p>
 <% end %>
-
-<dl class="word-detail">
-  <dt>English meaning</dt>
-  <dd><%= simple_format(@word.english_meaning) %></dd>
-  <dt>Chinese meaning</dt>
-  <dd><%= simple_format(@word.chinese_meaning) %></dd>
-</dl>
-
-<p class="actions">
-  <%= link_to "Edit", edit_word_path(@word), class: "button button-primary" %>
-  <%= button_to "Delete", word_path(@word), method: :delete, class: "button button-danger", form: { data: { turbo_confirm: "Delete this word?" } } %>
-  <%= link_to "All words", words_path, class: "button button-secondary" %>
-</p>
