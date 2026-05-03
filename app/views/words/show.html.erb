@@ -6,6 +6,18 @@
   <p class="flash flash-notice"><%= flash[:notice] %></p>
 <% end %>
 
+<% if params[:flash_remember].present? %>
+  <div class="feedback-panel word-flash-followup">
+    <p class="feedback-label">Review</p>
+    <p class="feedback-copy">Here are the meanings. Continue when you are ready.</p>
+    <div class="actions">
+      <%= link_to "Next word",
+                  word_flash_remember_path(reviewed_word_ids: params[:reviewed_word_ids]),
+                  class: "button button-primary button-large" %>
+    </div>
+  </div>
+<% end %>
+
 <dl class="word-detail">
   <dt>English meaning</dt>
   <dd><%= simple_format(@word.english_meaning) %></dd>
