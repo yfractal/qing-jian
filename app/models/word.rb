@@ -2,6 +2,7 @@ class Word < ApplicationRecord
   attr_accessor :skip_create_word_question_job
 
   has_many :word_questions, dependent: :destroy
+  has_many :word_self_recall_records, dependent: :destroy
   has_one :word_recall_state, dependent: :destroy
 
   validates :word, presence: true, uniqueness: { case_sensitive: false }

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_02_204100) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_03_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -125,6 +125,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_02_204100) do
     t.index ["word_id"], name: "index_word_recall_states_on_word_id", unique: true
   end
 
+  create_table "word_self_recall_records", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "is_correct", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "word_id", null: false
+    t.index ["word_id"], name: "index_word_self_recall_records_on_word_id"
+  end
+
   create_table "words", force: :cascade do |t|
     t.string "chinese_meaning"
     t.datetime "created_at", null: false
@@ -146,4 +154,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_02_204100) do
   add_foreign_key "word_question_records", "word_questions"
   add_foreign_key "word_questions", "words"
   add_foreign_key "word_recall_states", "words"
+  add_foreign_key "word_self_recall_records", "words"
 end

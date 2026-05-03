@@ -141,6 +141,33 @@ class WordsDueForRecallTest < ActiveSupport::TestCase
     )
   end
 
+  test "correct self recall advances state like question record" do
+    WordSelfRecallRecord.create!(
+      word: @word,
+      is_correct: true,
+      created_at: time_on(@created_on, hour: 10),
+      updated_at: time_on(@created_on, hour: 10)
+    )
+
+    @word.word_recall_state.reload
+    assert_equal 1, @word.word_recall_state.remember_times
+    assert_equal @created_on + 2.days, @word.word_recall_state.due_day
+  end
+
+  test "incorrect self recall does not change recall state" do
+    original_state = @word.word_recall_state.attributes.slice("remember_times", "due_day")
+
+    WordSelfRecallRecord.create!(
+      word: @word,
+      is_correct: false,
+      created_at: time_on(@created_on, hour: 10),
+      updated_at: time_on(@created_on, hour: 10)
+    )
+
+    @word.word_recall_state.reload
+    assert_equal original_state, @word.word_recall_state.attributes.slice("remember_times", "due_day")
+  end
+
   private
 
   def create_record!(created_on:, correct:)
