@@ -19,7 +19,20 @@
     <tbody>
       <% @words.each do |word| %>
         <tr>
-          <td><strong><%= word.word %></strong></td>
+          <td>
+            <div class="question-audio-row word-table-word-play">
+              <strong><%= word.word %></strong>
+              <%= tag.button(
+                    type: "button",
+                    class: "button button-secondary pronunciation-play pronunciation-icon-button",
+                    aria: { label: "Play sound" },
+                    title: "Play sound",
+                    data: { pronunciation_play: true, word_text: word.word }
+                  ) do %>
+                &#128266;
+              <% end %>
+            </div>
+          </td>
           <td><%= truncate(word.english_meaning, length: 80) %></td>
           <td><%= truncate(word.chinese_meaning, length: 80) %></td>
           <td class="actions-cell">
@@ -34,3 +47,20 @@
 <% else %>
   <p>No words yet. <%= link_to "Add your first word", new_word_path %>.</p>
 <% end %>
+
+<script>
+  document.addEventListener("click", function(event) {
+    const button = event.target.closest("[data-pronunciation-play]");
+    if (!button) return;
+
+    const text = (button.dataset.wordText || "").trim();
+    if (!text) return;
+
+    if (window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+  });
+</script>

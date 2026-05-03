@@ -218,6 +218,10 @@ input[type="submit"].button {
   vertical-align: top;
 }
 
+.word-table .word-table-word-play.question-audio-row {
+  margin-top: 0;
+}
+
 .actions-cell {
   white-space: nowrap;
   display: flex;
