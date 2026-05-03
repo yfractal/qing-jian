@@ -1,0 +1,104 @@
+<% content_for :title, "Browse Words" %>
+
+<main class="remember-page">
+  <header class="remember-header">
+    <div>
+      <p class="eyebrow">Browse</p>
+      <h1>Browse Words</h1>
+      <p class="remember-subtitle">Review each word's full meaning and mark whether you remember it.</p>
+    </div>
+    <div class="remember-header-actions">
+      <%= link_to "Daily Review", root_path, class: "button button-secondary" %>
+      <%= link_to "All words", words_path, class: "button button-secondary" %>
+    </div>
+  </header>
+
+  <% if @current_word.present? %>
+    <section class="remember-progress-card">
+      <p class="eyebrow">Progress</p>
+      <p class="remember-progress-main">Word <%= @current_index + 1 %> of <%= @total_count %></p>
+    </section>
+
+    <section class="recall-card">
+      <div class="question-block">
+        <p class="question-helper">Word</p>
+        <h2><%= @current_word.word %></h2>
+        <div class="question-audio-row">
+          <span class="question-audio-pronunciation"><%= @current_word.pronunciation.presence || "—" %></span>
+          <button
+            type="button"
+            class="button button-secondary pronunciation-play pronunciation-icon-button"
+            aria-label="Play sound"
+            title="Play sound"
+            data-pronunciation-play
+            data-word-text="<%= @current_word.word %>">
+            &#128266;
+          </button>
+        </div>
+      </div>
+
+      <dl class="word-detail">
+        <dt>English meaning</dt>
+        <dd><%= simple_format(@current_word.english_meaning) %></dd>
+        <dt>Chinese meaning</dt>
+        <dd><%= simple_format(@current_word.chinese_meaning) %></dd>
+      </dl>
+
+      <div class="browse-nav">
+        <% if @prev_word %>
+          <%= link_to "&larr; Prev".html_safe, word_browse_path(word_id: @prev_word.id), class: "button button-secondary" %>
+        <% else %>
+          <span></span>
+        <% end %>
+
+        <%= form_with url: word_browse_record_path, class: "browse-record-form" do |form| %>
+          <%= hidden_field_tag :word_id, @current_word.id %>
+          <%= hidden_field_tag :next_word_id, @next_word&.id %>
+
+          <div class="browse-record-buttons">
+            <%= form.button "Remember",
+                            name: "is_correct",
+                            value: "true",
+                            type: "submit",
+                            class: "recall-btn recall-btn-success" %>
+            <%= form.button "Don't remember",
+                            name: "is_correct",
+                            value: "false",
+                            type: "submit",
+                            class: "recall-btn recall-btn-secondary" %>
+          </div>
+        <% end %>
+
+        <% if @next_word %>
+          <%= link_to "Skip &rarr;".html_safe, word_browse_path(word_id: @next_word.id), class: "button button-secondary" %>
+        <% else %>
+          <span></span>
+        <% end %>
+      </div>
+    </section>
+  <% else %>
+    <section class="completion-card">
+      <p class="eyebrow">Browse</p>
+      <h2>No words yet</h2>
+      <p>Add some words to start browsing.</p>
+      <%= link_to "Add new word", new_word_path, class: "button button-primary" %>
+    </section>
+  <% end %>
+</main>
+
+<script>
+  document.addEventListener("click", function(event) {
+    const button = event.target.closest("[data-pronunciation-play]");
+    if (!button) return;
+
+    const text = (button.dataset.wordText || "").trim();
+    if (!text) return;
+
+    if (window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+  });
+</script>

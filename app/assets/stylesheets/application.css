@@ -913,3 +913,22 @@ input[type="submit"].button-large {
 .pronunciation-icon-button:focus-visible {
   background: #dde6ef;
 }
+
+.browse-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.browse-record-form {
+  display: flex;
+  justify-content: center;
+}
+
+.browse-record-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
