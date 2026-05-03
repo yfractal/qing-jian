@@ -13,7 +13,8 @@ module Llm
     SimilarWordResult = Data.define(:word, :english_meaning, :chinese_meaning)
 
     OPENROUTER_URI = URI("https://openrouter.ai/api/v1/chat/completions")
-    DEFAULT_MODEL = "deepseek/deepseek-v4-pro"
+    # DEFAULT_MODEL = "deepseek/deepseek-v4-pro"
+    DEFAULT_MODEL = 'deepseek/deepseek-v4-flash'
     REQUIRED_KEYS = %w[word english_meaning chinese_meaning].freeze
 
     # @param requester [#call(String)] optional callable(body_json) -> response object with #code and #body
