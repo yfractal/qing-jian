@@ -428,6 +428,24 @@ input[type="submit"].button {
   flex: 0 1 auto;
 }
 
+/* Word flash remember (words#show + flash_remember): keep headword row on one line. */
+.word-show-flash-remember-page .question-word-with-play {
+  flex-wrap: nowrap;
+}
+
+.word-show-flash-remember-page .question-word-with-play h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.word-show-flash-remember-page .question-word-with-play .question-audio-pronunciation,
+.word-show-flash-remember-page .question-word-with-play .pronunciation-icon-button {
+  flex-shrink: 0;
+}
+
 .question-audio-row-pronunciation-only {
   margin-top: 0.5rem;
 }

@@ -174,6 +174,24 @@
   width: 100%;
 }
 
+/* Keep headword, pronunciation, and play control on one row (avoid flex-wrap break). */
+.word-flash-remember-page.flash-card-remember-page .question-word-with-play {
+  flex-wrap: nowrap;
+}
+
+.word-flash-remember-page.flash-card-remember-page .question-word-with-play h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.word-flash-remember-page.flash-card-remember-page .question-word-with-play .question-audio-pronunciation,
+.word-flash-remember-page.flash-card-remember-page .question-word-with-play .pronunciation-icon-button {
+  flex-shrink: 0;
+}
+
 @media (max-width: 900px) {
   .flash-card-remember-page .recall-layout {
     grid-template-columns: 1fr;
