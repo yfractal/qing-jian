@@ -30,8 +30,8 @@
       <section class="recall-layout" aria-label="Word flash study">
         <div class="recall-main">
           <p class="question-helper">Do you remember this word?</p>
-          <h2><%= @word.word %></h2>
-          <div class="question-audio-row">
+          <div class="question-word-with-play">
+            <h2><%= @word.word %></h2>
             <span class="question-audio-pronunciation"><%= @word.pronunciation.presence || "—" %></span>
             <button
               type="button"
