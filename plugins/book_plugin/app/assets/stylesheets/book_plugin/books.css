@@ -180,7 +180,7 @@
 }
 
 .word-flash-remember-page.flash-card-remember-page .question-word-with-play h2 {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
