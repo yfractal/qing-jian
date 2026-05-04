@@ -253,6 +253,72 @@ input[type="submit"].button {
   margin-left: 0;
 }
 
+.word-show-page .remember-header {
+  align-items: flex-start;
+}
+
+.word-show-header-lead {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.word-show-headword-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1.08;
+}
+
+.word-show-headword-row {
+  margin-top: 0.35rem;
+}
+
+.word-show-headword-row .word-show-headword-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.word-show-meanings .question-helper {
+  margin-bottom: 1rem;
+}
+
+.word-detail-show dt {
+  margin-top: 1.1rem;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.word-detail-show dt:first-of-type {
+  margin-top: 0;
+}
+
+.word-detail-show dd {
+  margin-top: 0.4rem;
+  color: #1e293b;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.word-detail-show dd p {
+  margin: 0 0 0.65rem;
+}
+
+.word-detail-show dd p:last-child {
+  margin-bottom: 0;
+}
+
+.word-show-card-footer {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .remember-page {
   max-width: 720px;
   margin: 0 auto;
@@ -428,9 +494,15 @@ input[type="submit"].button {
   flex: 0 1 auto;
 }
 
-/* Word flash remember (words#show + flash_remember): keep headword row on one line. */
+/* Word flash remember (words#show + flash_remember): headword + IPA + play on one row. */
 .word-show-flash-remember-page .question-word-with-play {
+  display: inline-flex;
+  flex-direction: row;
   flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  max-width: 100%;
 }
 
 .word-show-flash-remember-page .question-word-with-play h2 {
@@ -441,7 +513,11 @@ input[type="submit"].button {
   white-space: nowrap;
 }
 
-.word-show-flash-remember-page .question-word-with-play .question-audio-pronunciation,
+.word-show-flash-remember-page .question-word-with-play .question-audio-pronunciation {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .word-show-flash-remember-page .question-word-with-play .pronunciation-icon-button {
   flex-shrink: 0;
 }

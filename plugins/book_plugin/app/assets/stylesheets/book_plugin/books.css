@@ -174,9 +174,15 @@
   width: 100%;
 }
 
-/* Keep headword, pronunciation, and play control on one row (avoid flex-wrap break). */
+/* Headword + IPA + play: one horizontal row, grouped after the word. */
 .word-flash-remember-page.flash-card-remember-page .question-word-with-play {
+  display: inline-flex;
+  flex-direction: row;
   flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  max-width: 100%;
 }
 
 .word-flash-remember-page.flash-card-remember-page .question-word-with-play h2 {
@@ -187,7 +193,11 @@
   white-space: nowrap;
 }
 
-.word-flash-remember-page.flash-card-remember-page .question-word-with-play .question-audio-pronunciation,
+.word-flash-remember-page.flash-card-remember-page .question-word-with-play .question-audio-pronunciation {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .word-flash-remember-page.flash-card-remember-page .question-word-with-play .pronunciation-icon-button {
   flex-shrink: 0;
 }
