@@ -23,7 +23,8 @@ class RememberWordsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "nav.site-nav[aria-label='Primary navigation']" do
       assert_select "a.site-nav-brand[href='#{root_path}']", text: /Qing Jian/
-      assert_select "a.site-nav-link.is-active[aria-current='page'][href='#{root_path}']", "Review"
+      assert_select "a.site-nav-link[href='#{root_path}']", "Review"
+      assert_select "a.site-nav-link.is-active[aria-current='page'][href='#{word_flash_remember_path}']", "Remember Flash Cards"
       assert_select "a.site-nav-link[href='#{today_words_path}']", "Today"
       assert_select "a.site-nav-link[href='#{words_path}']", "Words"
       assert_select "a.site-nav-link[href='#{statistics_words_path}']", "Statistics"

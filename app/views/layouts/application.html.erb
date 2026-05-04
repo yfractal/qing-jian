@@ -29,7 +29,12 @@
         {
           label: "Review",
           path: main_app.root_path,
-          active: [ "/", "/word_flash_remember", "/review/multiple_choice" ].include?(request.path)
+          active: request.path == main_app.multiple_choice_review_path
+        },
+        {
+          label: "Remember Flash Cards",
+          path: main_app.word_flash_remember_path,
+          active: controller_name == "word_flash_remember"
         },
         { label: "Today", path: main_app.today_words_path, active: request.path == main_app.today_words_path },
         { label: "Browse", path: main_app.word_browse_path, active: request.path == main_app.word_browse_path },
