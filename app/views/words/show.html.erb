@@ -20,8 +20,8 @@
     <section class="recall-card word-show-flash-reveal-card" aria-label="Word meanings">
       <div class="question-block">
         <p class="question-helper">Word</p>
-        <h2><%= @word.word %></h2>
-        <div class="question-audio-row">
+        <div class="question-word-with-play">
+          <h2><%= @word.word %></h2>
           <span class="question-audio-pronunciation"><%= @word.pronunciation.presence || "—" %></span>
           <button
             type="button"
