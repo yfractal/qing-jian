@@ -207,7 +207,7 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     get word_url(w, params: { flash_remember: "1", reviewed_word_ids: ids })
     assert_response :success
     assert_select "main.remember-page.word-show-flash-remember-page"
-    assert_select "a[href=?]", edit_word_path(w), count: 0
+    assert_select "a[href=?]", edit_word_path(w), text: "Edit word"
     assert_select "a", text: "All words", count: 0
     assert_select "input[name='_method'][value='delete']", count: 0
     assert_select ".recall-card dl.word-detail ~ div.actions a", text: "Next word"

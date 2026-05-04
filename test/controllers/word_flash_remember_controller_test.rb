@@ -17,6 +17,8 @@ class WordFlashRememberControllerTest < ActionDispatch::IntegrationTest
 
       assert_response :success
       assert_select "h1", /Word flash/i
+      assert_select "a", text: "Edit word", count: 1
+      assert_match(%r{/words/\d+/edit}, @response.body)
       assert_select "form[action=?]", word_self_recall_records_path do
         assert_select "input[name='word_self_recall_record[word_id]']", count: 1
         assert_select "button[name='word_self_recall_record[is_correct]'][value='true']"
@@ -31,6 +33,7 @@ class WordFlashRememberControllerTest < ActionDispatch::IntegrationTest
 
       assert_response :success
       assert_select "input[name='word_self_recall_record[word_id]'][value='#{@other.id}']", visible: false
+      assert_select "a[href=?]", edit_word_path(@other), text: "Edit word"
     end
   end
 
