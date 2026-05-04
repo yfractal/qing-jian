@@ -46,6 +46,8 @@
         { label: "Add word", path: main_app.new_word_path },
         { label: "New book", path: "/books/books/new" }
       ] %>
-    <%= yield %>
+    <main class="layout-main">
+      <%= yield %>
+    </main>
   </body>
 </html>
