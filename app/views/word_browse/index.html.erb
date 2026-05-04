@@ -1,32 +1,38 @@
-<% content_for :title, "Browse Words" %>
+<% content_for :title, @current_word.present? ? "#{@current_word.word} · Browse" : "Browse Words" %>
 
-<main class="remember-page">
+<main class="remember-page word-browse-page">
   <header class="remember-header">
     <div>
       <p class="eyebrow">Browse</p>
-      <h1>Browse Words</h1>
-      <p class="remember-subtitle">Review each word's full meaning. Use Prev and Next word to move through the list.</p>
+      <h1>Browse words</h1>
+      <p class="remember-subtitle">Read full meanings in dictionary order. Use the arrows or keyboard ← → to move.</p>
     </div>
-    <div class="remember-header-actions">
-      <% if @current_word.present? %>
-        <%= link_to "Edit", edit_word_path(@current_word), class: "button button-secondary" %>
-      <% end %>
-      <%= link_to "Daily Review", root_path, class: "button button-secondary" %>
+    <div class="remember-header-actions word-browse-header-actions">
+      <%= link_to "Daily review", root_path, class: "button button-secondary" %>
       <%= link_to "All words", words_path, class: "button button-secondary" %>
+      <% if @current_word.present? %>
+        <%= link_to "Edit word", edit_word_path(@current_word), class: "button button-secondary" %>
+      <% end %>
     </div>
   </header>
 
   <% if @current_word.present? %>
-    <section class="remember-progress-card">
-      <p class="eyebrow">Progress</p>
-      <p class="remember-progress-main">Word <%= @current_index + 1 %> of <%= @total_count %></p>
+    <section class="remember-progress-card word-browse-progress" aria-label="Browse progress">
+      <div class="word-browse-progress-top">
+        <p class="eyebrow">Progress</p>
+        <p class="remember-progress-main">Word <%= @current_index + 1 %> of <%= @total_count %></p>
+      </div>
+      <div class="remember-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= @progress_percent %>" aria-label="Position in word list">
+        <div class="remember-progress-fill" style="width: <%= @progress_percent %>%"></div>
+      </div>
     </section>
 
-    <section class="recall-card">
-      <div class="question-block">
+    <section class="recall-card word-browse-card" aria-label="Current word">
+      <div class="question-block word-browse-word-block">
         <p class="question-helper">Word</p>
-        <div class="question-word-with-play">
+        <div class="word-browse-word-line">
           <h2><%= @current_word.word %></h2>
+          <span class="question-audio-pronunciation word-browse-pronunciation-inline"><%= @current_word.pronunciation.presence || "—" %></span>
           <button
             type="button"
             class="button button-secondary pronunciation-play pronunciation-icon-button"
@@ -37,31 +43,52 @@
             &#128266;
           </button>
         </div>
-        <div class="question-audio-row question-audio-row-pronunciation-only">
-          <span class="question-audio-pronunciation"><%= @current_word.pronunciation.presence || "—" %></span>
-        </div>
       </div>
 
-      <dl class="word-detail">
-        <dt>English meaning</dt>
-        <dd><%= simple_format(@current_word.english_meaning) %></dd>
-        <dt>Chinese meaning</dt>
-        <dd><%= simple_format(@current_word.chinese_meaning) %></dd>
-      </dl>
+      <div class="word-browse-meanings">
+        <article class="word-browse-meaning-panel" aria-labelledby="browse-en-heading">
+          <h3 class="word-browse-meaning-heading" id="browse-en-heading">English meaning</h3>
+          <div class="word-browse-meaning-body">
+            <%= simple_format(@current_word.english_meaning) %>
+          </div>
+        </article>
+        <article class="word-browse-meaning-panel" aria-labelledby="browse-zh-heading">
+          <h3 class="word-browse-meaning-heading" id="browse-zh-heading">Chinese meaning</h3>
+          <div class="word-browse-meaning-body">
+            <%= simple_format(@current_word.chinese_meaning) %>
+          </div>
+        </article>
+      </div>
 
-      <div class="browse-nav">
+      <nav class="browse-nav word-browse-nav" aria-label="Previous and next word">
         <% if @prev_word %>
-          <%= link_to "&larr; Prev".html_safe, word_browse_path(word_id: @prev_word.id), class: "button button-secondary" %>
+          <%= link_to word_browse_path(word_id: @prev_word.id),
+                      class: "button button-secondary button-large browse-nav-btn browse-nav-prev",
+                      data: { browse_nav: "prev" } do %>
+            <span class="browse-nav-btn-label" aria-hidden="true">←</span>
+            <span>Previous</span>
+          <% end %>
         <% else %>
-          <span></span>
+          <span class="browse-nav-placeholder browse-nav-btn button button-secondary button-large" aria-disabled="true">
+            <span class="browse-nav-btn-label" aria-hidden="true">←</span>
+            <span>Previous</span>
+          </span>
         <% end %>
 
         <% if @next_word %>
-          <%= link_to "Next word &rarr;".html_safe, word_browse_path(word_id: @next_word.id), class: "button button-secondary" %>
+          <%= link_to word_browse_path(word_id: @next_word.id),
+                      class: "button button-primary button-large browse-nav-btn browse-nav-next",
+                      data: { browse_nav: "next" } do %>
+            <span>Next word</span>
+            <span class="browse-nav-btn-label" aria-hidden="true">→</span>
+          <% end %>
         <% else %>
-          <span></span>
+          <span class="browse-nav-placeholder browse-nav-btn button button-primary button-large browse-nav-next is-disabled" aria-disabled="true">
+            <span>Next word</span>
+            <span class="browse-nav-btn-label" aria-hidden="true">→</span>
+          </span>
         <% end %>
-      </div>
+      </nav>
     </section>
   <% else %>
     <section class="completion-card">
@@ -86,6 +113,23 @@
       utterance.lang = "en-US";
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utterance);
+    }
+  });
+
+  document.addEventListener("keydown", function(event) {
+    if (event.defaultPrevented) return;
+    const tag = (event.target && event.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || event.target.isContentEditable) return;
+
+    const prev = document.querySelector('[data-browse-nav="prev"]');
+    const next = document.querySelector('[data-browse-nav="next"]');
+
+    if (event.key === "ArrowLeft" && prev) {
+      event.preventDefault();
+      prev.click();
+    } else if (event.key === "ArrowRight" && next) {
+      event.preventDefault();
+      next.click();
     }
   });
 </script>

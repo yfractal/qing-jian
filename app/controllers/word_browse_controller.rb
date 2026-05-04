@@ -8,6 +8,7 @@ class WordBrowseController < ApplicationController
     @current_word = @words.find { |w| w.id == params[:word_id].to_i } || @words.first
     @current_index = @words.index(@current_word)
     @total_count = @words.size
+    @progress_percent = ((@current_index + 1).to_f / @total_count * 100).round
     @next_word = @words[@current_index + 1]
     @prev_word = @current_index.positive? ? @words[@current_index - 1] : nil
   end

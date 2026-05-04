@@ -12,7 +12,7 @@ class WordBrowseControllerTest < ActionDispatch::IntegrationTest
     get word_browse_path
 
     assert_response :success
-    assert_select "h1", "Browse Words"
+    assert_select "h1", "Browse words"
     assert_select "h2", @apple.word
   end
 
@@ -27,8 +27,8 @@ class WordBrowseControllerTest < ActionDispatch::IntegrationTest
     get word_browse_path(word_id: @apple.id)
 
     assert_response :success
-    assert_select "dd", /#{Regexp.escape(@apple.english_meaning)}/
-    assert_select "dd", /#{Regexp.escape(@apple.chinese_meaning)}/
+    assert_select ".word-browse-meaning-body", text: /#{Regexp.escape(@apple.english_meaning)}/
+    assert_select ".word-browse-meaning-body", text: /#{Regexp.escape(@apple.chinese_meaning)}/
   end
 
   test "index shows edit link for current word" do
