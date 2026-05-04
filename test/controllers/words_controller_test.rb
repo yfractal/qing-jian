@@ -218,10 +218,11 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     w = words(:cat)
     get word_url(w)
     assert_response :success
-    assert_select "a", text: "Edit"
-    assert_select "button", text: "Delete"
+    assert_select "a", text: "Edit word"
+    assert_select "button", text: "Delete word"
     assert_select "a", text: "All words"
-    assert_select "main.remember-page", count: 0
+    assert_select "main.remember-page.word-show-page"
+    assert_select "main.remember-page.word-show-flash-remember-page", count: 0
   end
 
   test "should get edit" do

@@ -68,22 +68,67 @@
     });
   </script>
 <% else %>
-  <h1><%= @word.word %></h1>
+  <main class="remember-page word-show-page">
+    <header class="remember-header">
+      <div class="word-show-header-lead">
+        <p class="eyebrow">Word</p>
+        <div class="question-word-with-play word-show-headword-row">
+          <h1 class="word-show-headword-title"><%= @word.word %></h1>
+          <span class="question-audio-pronunciation"><%= @word.pronunciation.presence || "—" %></span>
+          <%= tag.button(
+                type: "button",
+                class: "button button-secondary pronunciation-play pronunciation-icon-button",
+                aria: { label: "Play sound" },
+                title: "Play sound",
+                data: { pronunciation_play: true, word_text: @word.word }
+              ) do %>
+            &#128266;
+          <% end %>
+        </div>
+      </div>
+      <div class="remember-header-actions">
+        <%= link_to "All words", words_path, class: "button button-secondary" %>
+        <%= link_to "Edit word", edit_word_path(@word), class: "button button-primary" %>
+      </div>
+    </header>
 
-  <% if flash[:notice].present? %>
-    <p class="flash flash-notice"><%= flash[:notice] %></p>
-  <% end %>
+    <% if flash[:notice].present? %>
+      <p class="flash flash-notice"><%= flash[:notice] %></p>
+    <% end %>
 
-  <dl class="word-detail">
-    <dt>English meaning</dt>
-    <dd><%= simple_format(@word.english_meaning) %></dd>
-    <dt>Chinese meaning</dt>
-    <dd><%= simple_format(@word.chinese_meaning) %></dd>
-  </dl>
+    <section class="recall-card word-show-meanings" aria-labelledby="word-meanings-label">
+      <p id="word-meanings-label" class="question-helper">Meanings</p>
+      <dl class="word-detail word-detail-show">
+        <dt>English</dt>
+        <dd><%= simple_format(@word.english_meaning.presence || "—") %></dd>
+        <dt>Chinese</dt>
+        <dd><%= simple_format(@word.chinese_meaning.presence || "—") %></dd>
+      </dl>
 
-  <p class="actions">
-    <%= link_to "Edit", edit_word_path(@word), class: "button button-primary" %>
-    <%= button_to "Delete", word_path(@word), method: :delete, class: "button button-danger", form: { data: { turbo_confirm: "Delete this word?" } } %>
-    <%= link_to "All words", words_path, class: "button button-secondary" %>
-  </p>
+      <footer class="word-show-card-footer">
+        <%= button_to "Delete word",
+                      word_path(@word),
+                      method: :delete,
+                      class: "button button-danger",
+                      form: { data: { turbo_confirm: "Delete this word?" } } %>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener("click", function(event) {
+      const button = event.target.closest("[data-pronunciation-play]");
+      if (!button) return;
+
+      const text = (button.dataset.wordText || "").trim();
+      if (!text) return;
+
+      if (window.speechSynthesis) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+      }
+    });
+  </script>
 <% end %>
