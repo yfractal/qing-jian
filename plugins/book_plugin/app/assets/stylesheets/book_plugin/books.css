@@ -161,6 +161,19 @@
   margin: 0;
 }
 
+/* Word flash remember (/word_flash_remember): actions below the word, not a side column. */
+.word-flash-remember-page.flash-card-remember-page .recall-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.25rem;
+}
+
+.word-flash-remember-page.flash-card-remember-page .recall-sidebar {
+  position: static;
+  width: 100%;
+}
+
 @media (max-width: 900px) {
   .flash-card-remember-page .recall-layout {
     grid-template-columns: 1fr;
@@ -201,5 +214,31 @@
 
   .flash-card-remember-page .recall-layout-result .recall-sidebar {
     flex-direction: column;
+  }
+
+  .word-flash-remember-page.flash-card-remember-page .recall-layout {
+    padding-bottom: 0;
+  }
+
+  .word-flash-remember-page.flash-card-remember-page .recall-sidebar {
+    position: static;
+    inset: auto;
+    flex-direction: column;
+    align-items: stretch;
+    background: transparent;
+    border-top: none;
+    padding: 0;
+    z-index: auto;
+  }
+
+  .word-flash-remember-page.flash-card-remember-page .recall-sidebar .recall-panel,
+  .word-flash-remember-page.flash-card-remember-page .recall-sidebar .recall-panel-form {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .word-flash-remember-page.flash-card-remember-page .recall-sidebar .recall-panel-form .recall-panel {
+    height: auto;
   }
 }
