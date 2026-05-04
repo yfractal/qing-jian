@@ -2,20 +2,22 @@ require "test_helper"
 
 module BookPlugin
   class FlashCardsDueForRecallTest < ActiveSupport::TestCase
-    test "returns due flash cards for a book and excludes reviewed ids" do
-      book = create_book
-      due_card = create_flash_card(book:, text: "Due")
-      future_card = create_flash_card(book:, text: "Future")
-      future_card.recall_state.update!(due_day: Date.current + 1.day)
+    test "returns due flash cards across all books and excludes reviewed ids" do
+      book_a = create_book
+      book_b = create_book
+      due_a = create_flash_card(book: book_a, text: "Due A")
+      due_b = create_flash_card(book: book_b, text: "Due B")
+      future = create_flash_card(book: book_a, text: "Future")
+      future.recall_state.update!(due_day: Date.current + 1.day)
 
       result = FlashCardsDueForRecall.call(
         day: Date.current,
-        book: book,
-        excluding_flash_card_ids: [future_card.id]
+        excluding_flash_card_ids: [future.id]
       )
 
-      assert_includes result, due_card
-      assert_not_includes result, future_card
+      assert_includes result, due_a
+      assert_includes result, due_b
+      assert_not_includes result, future
     end
 
     test "correct record increments remember times and sets next due day" do

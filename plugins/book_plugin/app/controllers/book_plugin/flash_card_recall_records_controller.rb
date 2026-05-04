@@ -1,9 +1,7 @@
 module BookPlugin
   class FlashCardRecallRecordsController < ApplicationController
-    before_action :set_book
-
     def create
-      flash_card = @book.flash_cards.find(record_params[:flash_card_id])
+      flash_card = FlashCard.find(record_params[:flash_card_id])
       record = FlashCardRecallRecord.create!(
         flash_card: flash_card,
         is_correct: ActiveModel::Type::Boolean.new.cast(record_params[:is_correct])
@@ -15,10 +13,6 @@ module BookPlugin
     end
 
     private
-
-    def set_book
-      @book = Book.find(params[:book_id])
-    end
 
     def record_params
       params.require(:flash_card_recall_record).permit(:flash_card_id, :is_correct)
@@ -35,14 +29,14 @@ module BookPlugin
       normalized_ids = flash_card_ids.uniq
       query = {}
       query[:reviewed_flash_card_ids] = normalized_ids.join(",") if normalized_ids.any?
-      book_remember_book_flash_cards_path(@book, query)
+      remember_flash_cards_path(query)
     end
 
     def remember_path_with_result(record)
       query = { result_record_id: record.id }
       normalized_ids = reviewed_flash_card_ids.uniq
       query[:reviewed_flash_card_ids] = normalized_ids.join(",") if normalized_ids.any?
-      book_remember_book_flash_cards_path(@book, query)
+      remember_flash_cards_path(query)
     end
   end
 end

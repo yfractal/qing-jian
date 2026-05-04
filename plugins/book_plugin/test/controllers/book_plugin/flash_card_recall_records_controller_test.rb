@@ -7,7 +7,7 @@ module BookPlugin
       card = create_flash_card(book:)
 
       assert_difference("FlashCardRecallRecord.count", 1) do
-        post "/books/books/#{book.id}/flash_card_recall_records", params: {
+        post "/books/flash_card_recall_records", params: {
           flash_card_recall_record: {
             flash_card_id: card.id,
             is_correct: "true"
@@ -18,14 +18,14 @@ module BookPlugin
 
       record = FlashCardRecallRecord.last
       assert record.correct?
-      assert_redirected_to "/books/books/#{book.id}/flash_cards/remember?result_record_id=#{record.id}&reviewed_flash_card_ids=12"
+      assert_redirected_to "/books/flash_cards/remember?result_record_id=#{record.id}&reviewed_flash_card_ids=12"
     end
 
     test "create saves review-again result without incrementing recall state" do
       book = create_book
       card = create_flash_card(book:)
 
-      post "/books/books/#{book.id}/flash_card_recall_records", params: {
+      post "/books/flash_card_recall_records", params: {
         flash_card_recall_record: {
           flash_card_id: card.id,
           is_correct: "false"
