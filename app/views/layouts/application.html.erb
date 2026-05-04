@@ -25,23 +25,7 @@
   <body>
     <%= render "shared/site_nav",
       brand_path: main_app.root_path,
-      nav_links: [
-        {
-          label: "Review",
-          path: main_app.root_path,
-          active: request.path == main_app.multiple_choice_review_path
-        },
-        {
-          label: "Remember Flash Cards",
-          path: main_app.word_flash_remember_path,
-          active: controller_name == "word_flash_remember"
-        },
-        { label: "Today", path: main_app.today_words_path, active: request.path == main_app.today_words_path },
-        { label: "Browse", path: main_app.word_browse_path, active: request.path == main_app.word_browse_path },
-        { label: "Words", path: main_app.words_path, active: controller_name == "words" },
-        { label: "Statistics", path: main_app.statistics_words_path, active: request.path == main_app.statistics_words_path },
-        { label: "Books", path: "/books", active: request.path.start_with?("/books") }
-      ],
+      nav_links: primary_site_nav_links,
       nav_actions: [
         { label: "Add word", path: main_app.new_word_path },
         { label: "New book", path: "/books/books/new" }
