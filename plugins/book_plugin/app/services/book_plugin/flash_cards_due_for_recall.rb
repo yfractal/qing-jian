@@ -12,9 +12,8 @@ module BookPlugin
     ].freeze
 
     class << self
-      def call(day: Date.current, book: nil, excluding_flash_card_ids: [])
+      def call(day: Date.current, excluding_flash_card_ids: [])
         due_cards = FlashCard.joins(:recall_state).merge(FlashCardRecallState.where(due_day: ..day.to_date))
-        due_cards = due_cards.where(book:) if book.present?
 
         excluded_ids = normalize_flash_card_ids(excluding_flash_card_ids)
         return due_cards if excluded_ids.empty?

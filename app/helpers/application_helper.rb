@@ -33,23 +33,12 @@ module ApplicationHelper
       }
     ]
 
-    bid = primary_nav_book_id_param
-    if bid
-      remember_path = book_plugin.book_remember_book_flash_cards_path(bid)
-      links.insert(1, {
-        label: "Book flash review",
-        path: remember_path,
-        active: controller_path == "book_plugin/flash_card_remember"
-      })
-    end
+    links.insert(1, {
+      label: "Book flash review",
+      path: book_plugin.remember_flash_cards_path,
+      active: controller_path == "book_plugin/flash_card_remember"
+    })
 
     links
-  end
-
-  # Nested book routes use :book_id; books#show/edit/... use :id.
-  def primary_nav_book_id_param
-    raw = params[:book_id].presence || (controller_path == "book_plugin/books" ? params[:id] : nil)
-    raw = raw.to_s
-    raw if raw.match?(/\A\d+\z/)
   end
 end

@@ -1,4 +1,4 @@
-<% content_for :title, "Remember Flash Cards · #{@book.title}" %>
+<% content_for :title, "Remember Flash Cards" %>
 <% content_for :head do %>
   <%= stylesheet_link_tag "book_plugin/books", "data-turbo-track": "reload" %>
   <%= javascript_include_tag "book_plugin/flash_card_remember", defer: true %>
@@ -9,11 +9,17 @@
     <div>
       <p class="eyebrow">Daily Review</p>
       <h1>Remember Flash Cards</h1>
-      <p><%= @book.title %></p>
+      <% if @flash_card.present? %>
+        <p><%= @flash_card.book.title %></p>
+      <% end %>
     </div>
     <div class="remember-header-actions">
-      <%= link_to "Back to flash cards", book_flash_cards_path(@book), class: "button button-secondary" %>
-      <%= link_to "Back to book", book_path(@book), class: "button button-secondary" %>
+      <% if @flash_card.present? %>
+        <%= link_to "Flash cards for this book", book_flash_cards_path(@flash_card.book), class: "button button-secondary" %>
+        <%= link_to "Back to book", book_path(@flash_card.book), class: "button button-secondary" %>
+      <% else %>
+        <%= link_to "Books", books_path, class: "button button-secondary" %>
+      <% end %>
     </div>
   </header>
 
@@ -74,7 +80,7 @@
               <p class="recall-progress" data-flash-card-reveal-progress></p>
             </div>
 
-            <%= form_with model: @flash_card_recall_record, url: book_flash_card_recall_records_path(@book), class: "answer-form recall-panel-form" do |form| %>
+            <%= form_with model: @flash_card_recall_record, url: flash_card_recall_records_path, class: "answer-form recall-panel-form" do |form| %>
               <%= hidden_field_tag :reviewed_flash_card_ids, @reviewed_flash_card_ids.join(",") if @reviewed_flash_card_ids.present? %>
               <%= form.hidden_field :flash_card_id, value: @flash_card.id %>
 
@@ -93,7 +99,7 @@
       <p class="eyebrow">Daily Review</p>
       <h2>All caught up</h2>
       <p>You have recalled all flash cards due today.</p>
-      <%= link_to "Create flash card", new_book_flash_card_path(@book), class: "button button-primary" %>
+      <%= link_to "Books", books_path, class: "button button-primary" %>
     </section>
   <% end %>
 </main>

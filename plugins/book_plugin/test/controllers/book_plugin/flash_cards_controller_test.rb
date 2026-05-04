@@ -186,7 +186,7 @@ module BookPlugin
       get "/books/books/#{book.id}/flash_cards"
 
       assert_response :success
-      assert_select "a[href='/books/books/#{book.id}/flash_cards/remember']", "Remember flash cards"
+      assert_select "a[href='/books/flash_cards/remember']", "Remember flash cards"
     end
 
     test "index lists flash cards for book with edit link" do

@@ -6,7 +6,7 @@ module BookPlugin
       book = create_book
       card = create_flash_card(book:, text: "Remember this")
 
-      get "/books/books/#{book.id}/flash_cards/remember"
+      get "/books/flash_cards/remember"
 
       assert_response :success
       assert_select "h1", "Remember Flash Cards"
@@ -26,7 +26,7 @@ module BookPlugin
       reviewed_card = create_flash_card(book:, text: "Reviewed")
       next_card = create_flash_card(book:, text: "Next")
 
-      get "/books/books/#{book.id}/flash_cards/remember", params: {
+      get "/books/flash_cards/remember", params: {
         reviewed_flash_card_ids: reviewed_card.id.to_s
       }
 
@@ -38,11 +38,11 @@ module BookPlugin
       book = create_book
       card = create_flash_card(book:, text: "Again")
 
-      get "/books/books/#{book.id}/flash_cards/remember", params: {
+      get "/books/flash_cards/remember", params: {
         reviewed_flash_card_ids: card.id.to_s
       }
 
-      assert_redirected_to "/books/books/#{book.id}/flash_cards/remember"
+      assert_redirected_to "/books/flash_cards/remember"
       assert_equal "Starting another flash card recall pass for cards still due.", flash[:notice]
     end
 
@@ -51,12 +51,12 @@ module BookPlugin
       card = create_flash_card(book:, text: "Done")
       record = FlashCardRecallRecord.create!(flash_card: card, is_correct: true)
 
-      get "/books/books/#{book.id}/flash_cards/remember", params: {
+      get "/books/flash_cards/remember", params: {
         result_record_id: record.id
       }
 
       assert_response :success
-      expected_href = "/books/books/#{book.id}/flash_cards/remember?reviewed_flash_card_ids=#{card.id}"
+      expected_href = "/books/flash_cards/remember?reviewed_flash_card_ids=#{card.id}"
       assert_select "a[href=?]", expected_href, text: "Next flash card"
       assert_select "section.recall-layout-result aside.recall-sidebar"
     end

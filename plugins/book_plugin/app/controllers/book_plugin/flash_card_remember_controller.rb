@@ -1,22 +1,19 @@
 module BookPlugin
   class FlashCardRememberController < ApplicationController
-    before_action :set_book
-
     def index
       @reviewed_flash_card_ids = reviewed_flash_card_ids
       load_progress_counts!
 
       return if load_result_state
 
-      due_cards = FlashCardsDueForRecall.call(day: Date.current, book: @book)
+      due_cards = FlashCardsDueForRecall.call(day: Date.current)
       filtered_due_cards = FlashCardsDueForRecall.call(
         day: Date.current,
-        book: @book,
         excluding_flash_card_ids: @reviewed_flash_card_ids
       )
 
       if @reviewed_flash_card_ids.any? && filtered_due_cards.none?
-        redirect_to book_remember_book_flash_cards_path(@book), notice: pass_cleared_notice(due_cards)
+        redirect_to remember_flash_cards_path, notice: pass_cleared_notice(due_cards)
         return
       end
 
@@ -25,10 +22,6 @@ module BookPlugin
     end
 
     private
-
-    def set_book
-      @book = Book.find(params[:book_id])
-    end
 
     def reviewed_flash_card_ids
       params[:reviewed_flash_card_ids].to_s.split(",").filter_map do |flash_card_id|
@@ -40,14 +33,12 @@ module BookPlugin
     def load_result_state
       @result_record = FlashCardRecallRecord
         .joins(:flash_card)
-        .where(book_plugin_flash_cards: { book_id: @book.id })
         .find_by(id: params[:result_record_id])
       return false unless @result_record
 
       @flash_card = @result_record.flash_card
       @flash_card_recall_record = @result_record
-      @next_flash_card_path = book_remember_book_flash_cards_path(
-        @book,
+      @next_flash_card_path = remember_flash_cards_path(
         reviewed_flash_card_ids: (@reviewed_flash_card_ids + [@flash_card.id]).uniq.join(",")
       )
 
@@ -68,8 +59,8 @@ module BookPlugin
     end
 
     def load_progress_counts!
-      current_due_card_ids = FlashCardsDueForRecall.call(day: Date.current, book: @book).pluck(:id)
-      remembered_today_card_ids = @book.flash_card_recall_records
+      current_due_card_ids = FlashCardsDueForRecall.call(day: Date.current).pluck(:id)
+      remembered_today_card_ids = FlashCardRecallRecord
         .where(is_correct: true, created_at: Time.zone.today.all_day)
         .distinct
         .pluck(:flash_card_id)

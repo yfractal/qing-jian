@@ -69,25 +69,21 @@ class NavigationTest < ActionDispatch::IntegrationTest
     get "/books/books/#{book.id}"
 
     assert_response :success
-    assert_select "a.site-nav-link[href='/books/books/#{book.id}/flash_cards/remember']", "Book flash review"
+    assert_select "a.site-nav-link[href='/books/flash_cards/remember']", "Book flash review"
   end
 
-  test "primary nav omits Book flash review on books index" do
+  test "primary nav includes Book flash review on books index" do
     get "/books"
 
     assert_response :success
-    assert_select "a.site-nav-link", text: "Book flash review", count: 0
+    assert_select "a.site-nav-link[href='/books/flash_cards/remember']", "Book flash review"
   end
 
   test "Book flash review nav link is active on flash card remember page" do
-    book = BookPlugin::Book.new(title: "Active Remember")
-    book.file.attach(io: StringIO.new("%PDF-1.4 sample"), filename: "mem.pdf", content_type: "application/pdf")
-    book.save!
-
-    get "/books/books/#{book.id}/flash_cards/remember"
+    get "/books/flash_cards/remember"
 
     assert_response :success
-    assert_select "a.site-nav-link.is-active[aria-current='page'][href='/books/books/#{book.id}/flash_cards/remember']", "Book flash review"
+    assert_select "a.site-nav-link.is-active[aria-current='page'][href='/books/flash_cards/remember']", "Book flash review"
     assert_select "a.site-nav-link.is-active[aria-current='page'][href='/books']", text: "Books", count: 0
   end
 end
