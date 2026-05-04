@@ -145,10 +145,93 @@ module BookPlugin
       )
 
       refute_includes html, "btn-pick-area"
+      assert_includes html, "flash-card-study-viewport"
       assert_includes html, "flash-card-hidden-recall-item"
       assert_includes html, "flash-card-study-show-next-item"
       assert_includes html, "INITIAL_PICKED_TEXT_GROUPS"
       assert_includes html, '"x0":0'
+    end
+
+    test "study mode with areas_to_show wraps page in flash-card-study-viewport" do
+      layout = [
+        { "type" => "text", "text" => "Alpha", "bbox" => [0, 0, 10, 10], "font_size" => 12 }
+      ]
+
+      html = PdfPageHtmlRenderer.render(
+        layout: layout,
+        width: 100,
+        height: 200,
+        scale: 2,
+        mode: :study,
+        areas_to_show: { "x0" => 0, "y0" => 0, "x1" => 40, "y1" => 40 },
+        items_to_remember: [[{ "id" => "el-1", "text" => "Alpha" }]],
+        load_js: true
+      )
+
+      assert_includes html, "flash-card-study-viewport"
+      assert_includes html, "width:80px"
+      assert_includes html, "height:80px"
+      assert_match(/left:\s*-?0(?:\.0+)?px/, html)
+      assert_match(/top:\s*-?0(?:\.0+)?px/, html)
+    end
+
+    test "study viewport clamps bbox to layout bounds and offsets page" do
+      layout = [
+        { "type" => "text", "text" => "Z", "bbox" => [0, 0, 5, 5], "font_size" => 12 }
+      ]
+
+      html = PdfPageHtmlRenderer.render(
+        layout: layout,
+        width: 100,
+        height: 200,
+        scale: 1,
+        mode: :study,
+        areas_to_show: { "x0" => 10, "y0" => 10, "x1" => 500, "y1" => 500 },
+        load_js: false
+      )
+
+      assert_includes html, "flash-card-study-viewport"
+      assert_includes html, "width:90px"
+      assert_includes html, "height:190px"
+      assert_match(/left:\s*-10px/, html)
+      assert_match(/top:\s*-10px/, html)
+    end
+
+    test "study mode without intersecting bbox omits viewport wrapper" do
+      layout = [
+        { "type" => "text", "text" => "Z", "bbox" => [0, 0, 5, 5], "font_size" => 12 }
+      ]
+
+      html = PdfPageHtmlRenderer.render(
+        layout: layout,
+        width: 100,
+        height: 200,
+        scale: 1,
+        mode: :study,
+        areas_to_show: { "x0" => 300, "y0" => 300, "x1" => 400, "y1" => 400 },
+        load_js: false
+      )
+
+      refute_includes html, "flash-card-study-viewport"
+    end
+
+    test "study mode without areas_to_show omits viewport wrapper" do
+      layout = [
+        { "type" => "text", "text" => "Only", "bbox" => [0, 0, 10, 10], "font_size" => 12 }
+      ]
+
+      html = PdfPageHtmlRenderer.render(
+        layout: layout,
+        width: 100,
+        height: 200,
+        scale: 2,
+        mode: :study,
+        areas_to_show: {},
+        items_to_remember: [[{ "id" => "el-1", "text" => "Only" }]],
+        load_js: false
+      )
+
+      refute_includes html, "flash-card-study-viewport"
     end
   end
 end

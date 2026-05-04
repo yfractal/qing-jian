@@ -42,6 +42,7 @@ module BookPlugin
     end
 
     def render
+      @study_viewport = build_study_viewport_clip
       parts = []
       s = ->(v) { v * @scale }
 
@@ -81,6 +82,46 @@ module BookPlugin
       h.slice("x0", "y0", "x1", "y1").transform_values(&:to_f)
     end
 
+    def build_study_viewport_clip
+      return nil unless @mode == :study
+
+      area = resolved_initial_area_pdf
+      return nil if area.blank?
+
+      ax0 = area["x0"].to_f
+      ay0 = area["y0"].to_f
+      ax1 = area["x1"].to_f
+      ay1 = area["y1"].to_f
+
+      x_lo, x_hi = [ax0, ax1].minmax
+      y_lo, y_hi = [ay0, ay1].minmax
+
+      ix0 = [x_lo, 0.0].max
+      iy0 = [y_lo, 0.0].max
+      ix1 = [x_hi, @width].min
+      iy1 = [y_hi, @height].min
+
+      return nil if ix1 <= ix0 || iy1 <= iy0
+
+      {
+        ix0: ix0,
+        iy0: iy0,
+        vw: (ix1 - ix0) * @scale,
+        vh: (iy1 - iy0) * @scale,
+        ox: -ix0 * @scale,
+        oy: -iy0 * @scale
+      }
+    end
+
+    def css_px(value)
+      f = value.to_f
+      i = f.to_i
+      return i.to_s if (f - i).abs < 1e-6
+
+      s = format("%.4f", f)
+      s.sub(/0+\z/, "").sub(/\.\z/, "")
+    end
+
     def picked_text_groups_for_script
       items = @items_to_remember
       return nil if items.blank?
@@ -103,6 +144,23 @@ module BookPlugin
     def header_css(s)
       w = s.call(@width)
       h = s.call(@height)
+      body_class = @study_viewport ? ' class="flash-card-study-clipped"' : ""
+      study_viewport_css = if @study_viewport
+        vp = @study_viewport
+        <<~CSS
+
+        body.flash-card-study-clipped { margin: 0; }
+
+        .flash-card-study-viewport .page {
+            margin: 0;
+            left: #{css_px(vp[:ox])}px;
+            top: #{css_px(vp[:oy])}px;
+        }
+        CSS
+      else
+        ""
+      end
+
       <<~HTML
         <html>
         <head>
@@ -196,14 +254,25 @@ module BookPlugin
             background: rgba(34, 197, 94, 0.22);
             border-radius: 4px;
         }
+        #{study_viewport_css}
         </style>
         </head>
-        <body>
+        <body#{body_class}>
       HTML
     end
 
     def toolbar_and_page_open
-      return '<div class="page">' if @mode == :study
+      if @mode == :study
+        if @study_viewport
+          vp = @study_viewport
+          return <<~HTML
+            <div class="flash-card-study-viewport" style="overflow:hidden;width:#{css_px(vp[:vw])}px;height:#{css_px(vp[:vh])}px;margin:0 auto;">
+            <div class="page">
+          HTML
+        end
+
+        return '<div class="page">'
+      end
 
       initial_area = resolved_initial_area_pdf
       text_btn_class = initial_area.nil? ? ' class="is-active"' : ""
@@ -348,9 +417,11 @@ module BookPlugin
     end
 
     def selection_box_close
+      viewport_close = @study_viewport ? "</div>\n" : ""
       <<~HTML
         <div id="selection-box"></div>
         </div>
+        #{viewport_close}
       HTML
     end
 
