@@ -789,19 +789,62 @@ input[type="submit"].button-large {
   font-weight: 600;
 }
 
+.statistics-bar-chart-figure {
+  margin: 0;
+}
+
+.statistics-bar-chart-caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .statistics-bar-chart {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: 0.35rem;
   align-items: end;
+  padding-top: 0.25rem;
+  border-bottom: 2px solid #cbd5e1;
+  margin-bottom: 0;
 }
 
 .statistics-bar-chart-column {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   min-width: 0;
+  padding-bottom: 0.35rem;
+}
+
+.statistics-bar-chart-bar-area {
+  width: 100%;
+  height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.statistics-bar-chart-fill {
+  width: min(100%, 2.5rem);
+  min-height: 0;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+  box-sizing: border-box;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
+}
+
+.statistics-bar-chart-fill--zero {
+  min-height: 3px;
+  opacity: 0.35;
 }
 
 .statistics-bar-chart-value {
@@ -810,25 +853,7 @@ input[type="submit"].button-large {
   color: #0f172a;
   line-height: 1;
   min-height: 1em;
-}
-
-.statistics-bar-chart-track {
-  width: 100%;
-  min-height: 104px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  background: #f1f5f9;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.statistics-bar-chart-fill {
-  width: 100%;
-  min-height: 0;
-  border-radius: 6px 6px 0 0;
-  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
-  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
 }
 
 .statistics-bar-chart-day {
