@@ -22,7 +22,7 @@
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
   </head>
 
-  <body>
+  <body class="<%= "#{controller_name} #{action_name}" %>">
     <%= render "shared/site_nav",
       brand_path: main_app.root_path,
       nav_links: primary_site_nav_links,
