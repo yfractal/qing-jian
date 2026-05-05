@@ -502,11 +502,11 @@ input[type="submit"].button {
   flex: 0 1 auto;
 }
 
-/* Word flash remember (words#show + flash_remember): headword + IPA + play on one row. */
+/* Word flash remember (words#show + flash_remember): headword + IPA + play; wrap instead of truncating. */
 .word-show-flash-remember-page .question-word-with-play {
-  display: inline-flex;
+  display: flex;
   flex-direction: row;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
   gap: 0.5rem;
@@ -514,16 +514,18 @@ input[type="submit"].button {
 }
 
 .word-show-flash-remember-page .question-word-with-play h2 {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: break-word;
 }
 
 .word-show-flash-remember-page .question-word-with-play .question-audio-pronunciation {
-  flex-shrink: 0;
-  white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .word-show-flash-remember-page .question-word-with-play .pronunciation-icon-button {
