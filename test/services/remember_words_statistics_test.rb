@@ -40,6 +40,38 @@ class RememberWordsStatisticsTest < ActiveSupport::TestCase
     assert_equal 2, stats[:heatmap_max_count]
   end
 
+  test "returns words added per day for the last 7 days" do
+    day = Date.new(2026, 4, 10)
+    travel_to day.in_time_zone.noon do
+      Word.create!(
+        word: "w1_#{SecureRandom.hex(4)}",
+        english_meaning: "e1",
+        chinese_meaning: "c1",
+        created_at: day.in_time_zone
+      )
+      Word.create!(
+        word: "w2_#{SecureRandom.hex(4)}",
+        english_meaning: "e2",
+        chinese_meaning: "c2",
+        created_at: (day - 2.days).in_time_zone
+      )
+      Word.create!(
+        word: "w3_#{SecureRandom.hex(4)}",
+        english_meaning: "e3",
+        chinese_meaning: "c3",
+        created_at: (day - 2.days).in_time_zone
+      )
+    end
+
+    stats = RememberWordsStatistics.call(day: day, days: 7)
+    by_date = stats[:words_added_last_7_days].index_by { |row| row[:date] }
+
+    assert_equal 7, stats[:words_added_last_7_days].size
+    assert_equal 1, by_date[day][:count]
+    assert_equal 2, by_date[day - 2.days][:count]
+    assert_equal 0, by_date[day - 1.days][:count]
+  end
+
   test "returns useful trailing metrics" do
     word = create_word!("trailing")
     question = create_question_for!(word)

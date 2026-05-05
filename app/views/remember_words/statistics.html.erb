@@ -43,6 +43,28 @@
     </article>
   </section>
 
+  <% words_added_series = @stats[:words_added_last_7_days] %>
+  <% max_words_added = [words_added_series.map { |row| row[:count] }.max.to_i, 1].max %>
+  <section class="statistics-panel statistics-words-added-chart" aria-label="Words added per day in the last 7 days">
+    <div class="statistics-panel-header">
+      <p class="eyebrow">Words added</p>
+      <p class="statistics-panel-meta">Last 7 calendar days</p>
+    </div>
+    <div class="statistics-bar-chart">
+      <% words_added_series.each do |row| %>
+        <% h_pct = ((row[:count].to_f / max_words_added) * 100).round %>
+        <% label = "#{row[:date].iso8601}: #{row[:count]} words added" %>
+        <div class="statistics-bar-chart-column" role="group" aria-label="<%= label %>">
+          <span class="statistics-bar-chart-value" aria-hidden="true"><%= row[:count] %></span>
+          <div class="statistics-bar-chart-track" aria-hidden="true">
+            <div class="statistics-bar-chart-fill" style="height: <%= h_pct %>%"></div>
+          </div>
+          <span class="statistics-bar-chart-day" aria-hidden="true"><%= row[:date].strftime("%a") %></span>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
   <section class="statistics-heatmap statistics-heatmap--floating-tooltip" aria-label="Daily review heatmap">
     <div class="statistics-heatmap-header">
       <p class="eyebrow">This year</p>

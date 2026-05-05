@@ -29,7 +29,8 @@ class RememberWordsStatistics
         heatmap_max_count: [daily_review_counts.values.max.to_i, 1].max,
         reviews_last_7_days: reviews_in_window(day: end_day, days: 7),
         reviews_last_30_days: reviews_in_window(day: end_day, days: 30),
-        active_days_last_30_days: active_days_in_window(day: end_day, days: 30)
+        active_days_last_30_days: active_days_in_window(day: end_day, days: 30),
+        words_added_last_7_days: words_added_per_day_last_7_days(day: end_day)
       }
     end
 
@@ -73,6 +74,21 @@ class RememberWordsStatistics
         .count
         .keys
         .size
+    end
+
+    def words_added_per_day_last_7_days(day:)
+      end_day = day.to_date
+      start_day = end_day - 6.days
+      range = start_day.in_time_zone.beginning_of_day..end_day.in_time_zone.end_of_day
+      counts = Word
+        .where(created_at: range)
+        .group("DATE(created_at)")
+        .count
+        .transform_keys(&:to_date)
+
+      (start_day..end_day).map do |date|
+        { date: date, count: counts[date].to_i }
+      end
     end
 
     def percent(numerator, denominator)
