@@ -5,6 +5,7 @@ class RememberWordsStatisticsTest < ActiveSupport::TestCase
 
   def setup
     WordQuestionRecord.delete_all
+    WordSelfRecallRecord.delete_all
     SimilarWord.delete_all
     WordQuestion.delete_all
     WordRecallState.delete_all
@@ -37,6 +38,27 @@ class RememberWordsStatisticsTest < ActiveSupport::TestCase
 
     assert_equal 2, stats[:daily_review_counts][Date.new(2026, 4, 1)]
     assert_equal 1, stats[:daily_review_counts][Date.new(2026, 4, 2)]
+    assert_equal 2, stats[:heatmap_max_count]
+  end
+
+  test "includes word flash remember (WordSelfRecallRecord) in review metrics" do
+    word = create_word!("flash")
+    question = create_question_for!(word)
+    day1 = Date.new(2026, 4, 1)
+    day2 = Date.new(2026, 4, 2)
+    t1 = Time.zone.local(2026, 4, 1, 10)
+    t2 = Time.zone.local(2026, 4, 2, 10)
+
+    create_record!(question, created_at: t1, is_correct: true)
+    create_self_recall!(word, created_at: t1, is_correct: true)
+    create_self_recall!(word, created_at: t2, is_correct: false)
+
+    stats = RememberWordsStatistics.call(day: day2, days: 7)
+
+    assert_equal 2, stats[:daily_review_counts][day1]
+    assert_equal 1, stats[:daily_review_counts][day2]
+    assert_equal 3, stats[:reviews_last_7_days]
+    assert_equal 2, stats[:active_days_last_30_days]
     assert_equal 2, stats[:heatmap_max_count]
   end
 
@@ -130,6 +152,15 @@ class RememberWordsStatisticsTest < ActiveSupport::TestCase
       word_question: question,
       picked_choice_token: is_correct ? "word:#{question.word_id}" : "similar_word:#{question.similar_words.first.id}",
       picked_choice_word: is_correct ? question.word.word : question.similar_words.first.word,
+      is_correct: is_correct,
+      created_at: created_at,
+      updated_at: created_at
+    )
+  end
+
+  def create_self_recall!(word, created_at: Time.zone.now, is_correct: true)
+    WordSelfRecallRecord.create!(
+      word: word,
       is_correct: is_correct,
       created_at: created_at,
       updated_at: created_at

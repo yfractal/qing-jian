@@ -45,11 +45,25 @@ class RememberWordsStatistics
     private
 
     def daily_review_counts_for(date_range)
-      WordQuestionRecord
-        .where(created_at: date_range.first.in_time_zone.beginning_of_day..date_range.last.in_time_zone.end_of_day)
+      tz_range = date_range.first.in_time_zone.beginning_of_day..date_range.last.in_time_zone.end_of_day
+      from_questions = WordQuestionRecord
+        .where(created_at: tz_range)
         .group("DATE(created_at)")
         .count
         .transform_keys(&:to_date)
+      from_flash_remember = WordSelfRecallRecord
+        .where(created_at: tz_range)
+        .group("DATE(created_at)")
+        .count
+        .transform_keys(&:to_date)
+      merge_count_hashes(from_questions, from_flash_remember)
+    end
+
+    def merge_count_hashes(*hashes)
+      hashes.reduce({}) do |merged, h|
+        h.each { |date, count| merged[date] = merged[date].to_i + count.to_i }
+        merged
+      end
     end
 
     def fill_missing_days(date_range, counts)
@@ -61,19 +75,13 @@ class RememberWordsStatistics
     def reviews_in_window(day:, days:)
       start_day = day - (days - 1).days
       range = start_day.in_time_zone.beginning_of_day..day.in_time_zone.end_of_day
-      WordQuestionRecord.where(created_at: range).count
+      WordQuestionRecord.where(created_at: range).count +
+        WordSelfRecallRecord.where(created_at: range).count
     end
 
     def active_days_in_window(day:, days:)
       start_day = day - (days - 1).days
-      range = start_day.in_time_zone.beginning_of_day..day.in_time_zone.end_of_day
-
-      WordQuestionRecord
-        .where(created_at: range)
-        .group("DATE(created_at)")
-        .count
-        .keys
-        .size
+      daily_review_counts_for(start_day..day).values.count { |c| c.to_i.positive? }
     end
 
     def words_added_per_day_last_7_days(day:)
