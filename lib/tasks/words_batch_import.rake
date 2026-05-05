@@ -79,6 +79,29 @@ namespace :words do
     final_missing = Word.where.missing(:word_questions).count
     puts "Backfill complete. Attempted: #{attempted}, still missing questions: #{final_missing}"
   end
+
+  desc "Lowercase the word column for all Word records (skips rows that would violate uniqueness)"
+  task lowercase: :environment do
+    updated = 0
+    skipped_conflict = 0
+
+    Word.find_each do |record|
+      lowered = record.word.to_s.downcase
+      next if record.word == lowered
+
+      if Word.where.not(id: record.id).where("LOWER(word) = ?", lowered).exists?
+        warn "Skip id=#{record.id} #{record.word.inspect} -> #{lowered.inspect} (another row already uses this spelling case-insensitively)"
+        skipped_conflict += 1
+        next
+      end
+
+      record.update!(word: lowered)
+      updated += 1
+    end
+
+    puts "Lowercased #{updated} words."
+    puts "Skipped #{skipped_conflict} words due to uniqueness conflict." if skipped_conflict.positive?
+  end
 end
 
 def parse_words_batch_input(input)
