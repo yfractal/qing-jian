@@ -8,11 +8,13 @@ _SELECTION_JS_REL = (
     / "app"
     / "services"
     / "book_plugin"
-    / "pdf_selection_script.js.txt"
+    / "pdf_selection_script.js"
 )
 
 
-def build_selection_js(scale, initial_area=None, initial_picked_text_groups=None):
+def build_selection_js(
+    scale, initial_area=None, initial_picked_text_groups=None, initial_vector_adjustments=None
+):
     """Mirror PdfSelectionScript.build for parity tests (reads canonical JS template)."""
     path = Path(__file__).resolve().parent / _SELECTION_JS_REL
     body = path.read_text(encoding="utf-8")
@@ -25,6 +27,7 @@ def build_selection_js(scale, initial_area=None, initial_picked_text_groups=None
         if initial_picked_text_groups is not None
         else "null"
     )
+    vector_json = json.dumps(initial_vector_adjustments or [], separators=compact)
     body = body.replace("const SCALE = 1.0;", f"const SCALE = {float(scale)};")
     body = body.replace(
         "const INITIAL_AREA_PDF = null;",
@@ -33,5 +36,9 @@ def build_selection_js(scale, initial_area=None, initial_picked_text_groups=None
     body = body.replace(
         "const INITIAL_PICKED_TEXT_GROUPS = null;",
         f"const INITIAL_PICKED_TEXT_GROUPS = {groups_json};",
+    )
+    body = body.replace(
+        "const INITIAL_VECTOR_ADJUSTMENTS = [];",
+        f"const INITIAL_VECTOR_ADJUSTMENTS = {vector_json};",
     )
     return body

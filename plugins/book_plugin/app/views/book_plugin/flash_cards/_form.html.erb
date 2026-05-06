@@ -18,6 +18,10 @@
     <%= label_tag "flash_card_items_to_remember_text", "Items to remember (one per line)" %>
     <%= text_area_tag "flash_card[items_to_remember_text]", flash_card.items_to_remember_as_form_text, id: "flash_card_items_to_remember_text", rows: 5 %>
 
+    <%= hidden_field_tag "flash_card[vector_adjustments]",
+                         flash_card.vector_adjustments.to_json,
+                         id: "flash_card_vector_adjustments" %>
+
     <%= f.submit(flash_card.persisted? ? "Update flash card" : "Create flash card", class: "button button-primary") %>
   <% end %>
 </section>

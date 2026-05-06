@@ -171,10 +171,17 @@ module BookPlugin
           flash_card: {
             book_html_id: book_html.id,
             areas_to_show: "{\"x\":1}",
-            items_to_remember_text: "alpha\nbeta"
+            items_to_remember_text: "alpha\nbeta",
+            vector_adjustments: '[{"path_id":"vector-path-1","dx":1.5,"dy":-2.0}]'
           }
         }
       end
+
+      card = FlashCard.order(:id).last
+      assert_equal(
+        [{ "path_id" => "vector-path-1", "dx" => 1.5, "dy" => -2.0 }],
+        card.vector_adjustments
+      )
 
       assert_redirected_to "/books/books/#{book.id}"
     end
@@ -211,6 +218,42 @@ module BookPlugin
       assert_includes @response.body, "No flash cards yet"
     end
 
+    test "edit renders vector adjustments in preview and hidden field" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+      book_html = BookHtml.create!(
+        book:,
+        page_number: 9,
+        layout: {
+          "width" => 100.0,
+          "height" => 200.0,
+          "items" => [
+            {
+              "type" => "vector",
+              "bbox" => [0, 0, 10, 10],
+              "paths" => [
+                { "d" => "M 0 0 L 1 1", "stroke" => "#000", "stroke_width" => 1, "fill" => "none", "bbox" => [0, 0, 1, 1] }
+              ]
+            }
+          ]
+        }
+      )
+      card = FlashCard.create!(
+        book:,
+        book_html:,
+        areas_to_show: {},
+        items_to_remember: [],
+        vector_adjustments: [{ "path_id" => "vector-path-1", "dx" => 2, "dy" => 3 }]
+      )
+
+      get "/books/books/#{book.id}/flash_cards/#{card.id}/edit"
+
+      assert_response :success
+      assert_includes @response.body, "flash_card_vector_adjustments"
+      assert_includes @response.body, "vector-path-1"
+      assert_includes @response.body, "INITIAL_VECTOR_ADJUSTMENTS"
+    end
+
     test "edit renders reused form and preview" do
       book = Book.new(title: "Book")
       book.save!(validate: false)
@@ -241,7 +284,8 @@ module BookPlugin
         flash_card: {
           book_html_id: book_html.id,
           areas_to_show: "{\"k\":2}",
-          items_to_remember_text: "x\ny"
+          items_to_remember_text: "x\ny",
+          vector_adjustments: '[{"path_id":"vector-path-2","dx":3,"dy":4}]'
         }
       }
 
@@ -249,6 +293,10 @@ module BookPlugin
       card.reload
       assert_equal({ "k" => 2 }, card.areas_to_show)
       assert_equal %w[x y], card.items_to_remember
+      assert_equal(
+        [{ "path_id" => "vector-path-2", "dx" => 3.0, "dy" => 4.0 }],
+        card.vector_adjustments
+      )
     end
 
     test "destroy removes flash card and redirects to index" do
