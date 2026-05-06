@@ -8,7 +8,7 @@ module BookPlugin
   class PdfPageHtmlRenderer
     class << self
       def render(layout:, width:, height:, scale: 1.5, area: nil, load_js: true,
-                 mode: :authoring, areas_to_show: nil, items_to_remember: nil)
+                 mode: :authoring, areas_to_show: nil, items_to_remember: nil, vector_adjustments: nil)
         new(
           layout: layout,
           width: width,
@@ -18,7 +18,8 @@ module BookPlugin
           load_js: load_js,
           mode: mode,
           areas_to_show: areas_to_show,
-          items_to_remember: items_to_remember
+          items_to_remember: items_to_remember,
+          vector_adjustments: vector_adjustments
         ).render
       end
     end
@@ -29,7 +30,7 @@ module BookPlugin
     VECTOR_BLACK = "#000000"
 
     def initialize(layout:, width:, height:, scale:, area:, load_js: true,
-                   mode: :authoring, areas_to_show: nil, items_to_remember: nil)
+                   mode: :authoring, areas_to_show: nil, items_to_remember: nil, vector_adjustments: nil)
       @layout = layout
       @width = width.to_f
       @height = height.to_f
@@ -39,6 +40,8 @@ module BookPlugin
       @mode = mode.to_sym
       @areas_to_show = areas_to_show || {}
       @items_to_remember = items_to_remember
+      @vector_adjustments_list = normalize_vector_adjustments_param(vector_adjustments)
+      @vector_adjustments_by_path_id = @vector_adjustments_list.index_by { |h| h["path_id"] }
     end
 
     def render
@@ -72,6 +75,28 @@ module BookPlugin
     end
 
     private
+
+    def normalize_vector_adjustments_param(raw)
+      list =
+        case raw
+        when nil then []
+        when Array then raw
+        else []
+        end
+
+      list.filter_map do |entry|
+        next unless entry.is_a?(Hash)
+
+        path_id = (entry["path_id"] || entry[:path_id]).to_s
+        next if path_id.empty?
+
+        {
+          "path_id" => path_id,
+          "dx" => entry["dx"].to_f,
+          "dy" => entry["dy"].to_f
+        }
+      end
+    end
 
     def resolved_initial_area_pdf
       return @area if @area.present?
@@ -217,7 +242,11 @@ module BookPlugin
             width: 100%;
             height: 100%;
             z-index: 2;
-            pointer-events:none;
+            pointer-events:auto;
+        }
+
+        .vector-layer path {
+            cursor: move;
         }
 
         #selection-box {
@@ -337,21 +366,29 @@ module BookPlugin
              preserveAspectRatio="none">
       HTML
 
-      vector_paths.each do |path|
+      vector_paths.each_with_index do |path, index|
+        path_id = "vector-path-#{index + 1}"
         d = ERB::Util.html_escape(path.fetch("d"))
         stroke = ERB::Util.html_escape(vector_paint_for_display(path.fetch("stroke", "none")))
         fill = ERB::Util.html_escape(vector_paint_for_display(path.fetch("fill", "none")))
         stroke_width = path.fetch("stroke_width", 1)
         px0, py0, px1, py1 = path.fetch("bbox")
+        adj = @vector_adjustments_by_path_id[path_id] || { "dx" => 0.0, "dy" => 0.0 }
+        dx = fmt_num(adj["dx"])
+        dy = fmt_num(adj["dy"])
         lines << <<~HTML
-          <path d="#{d}"
+          <path id="#{path_id}"
+                d="#{d}"
                 stroke="#{stroke}"
                 stroke-width="#{stroke_width}"
                 fill="#{fill}"
+                data-dx="#{dx}"
+                data-dy="#{dy}"
                 data-x0="#{fmt_num(px0)}"
                 data-y0="#{fmt_num(py0)}"
                 data-x1="#{fmt_num(px1)}"
-                data-y1="#{fmt_num(py1)}" />
+                data-y1="#{fmt_num(py1)}"
+                transform="translate(#{dx}, #{dy})" />
         HTML
       end
       lines << "</svg>"
@@ -432,7 +469,8 @@ module BookPlugin
         js = script_builder.build(
           scale: @scale,
           initial_area: resolved_initial_area_pdf,
-          initial_picked_text_groups: picked_text_groups_for_script
+          initial_picked_text_groups: picked_text_groups_for_script,
+          initial_vector_adjustments: @vector_adjustments_list
         )
         chunks << <<~HTML
           <script>

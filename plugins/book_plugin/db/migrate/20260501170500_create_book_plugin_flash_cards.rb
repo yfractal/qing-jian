@@ -7,6 +7,7 @@ class CreateBookPluginFlashCards < ActiveRecord::Migration[8.1]
       t.references :book_html, null: false, foreign_key: { to_table: :book_plugin_book_htmls }
       t.public_send(json_type, :areas_to_show, null: false, default: {})
       t.public_send(json_type, :items_to_remember, null: false, default: [])
+      t.public_send(json_type, :vector_adjustments, null: false, default: [])
       t.timestamps
     end
   end

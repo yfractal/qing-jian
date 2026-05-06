@@ -3,7 +3,7 @@
 module BookPlugin
   class PdfFlashCardStudyScript
     class << self
-      def build(scale:, initial_area:, initial_picked_text_groups:)
+      def build(scale:, initial_area:, initial_picked_text_groups:, initial_vector_adjustments: nil)
         area_json = initial_area.present? ? initial_area.to_json : "null"
         groups_json = initial_picked_text_groups.present? ? initial_picked_text_groups.to_json : "null"
 

@@ -7,6 +7,7 @@
     const SCALE = 1.0;
     const INITIAL_AREA_PDF = null;
     const INITIAL_PICKED_TEXT_GROUPS = null;
+    const INITIAL_VECTOR_ADJUSTMENTS = [];
 
     let mode = null;
     let startX = 0;
@@ -17,6 +18,82 @@
     const pickedTextItems = [];
     let currentPickedTextItem = [];
     const currentPickedTextByElementId = new Map();
+
+    let draggingPath = null;
+    let dragStart = null;
+
+    function applyPathTransform(path, dx, dy) {
+        path.dataset.dx = String(dx);
+        path.dataset.dy = String(dy);
+        path.setAttribute("transform", `translate(${dx}, ${dy})`);
+    }
+
+    function getVectorAdjustments() {
+        return Array.from(document.querySelectorAll("svg.vector-layer path"))
+            .map((p) => ({
+                path_id: p.id,
+                dx: parseFloat(p.dataset.dx || "0"),
+                dy: parseFloat(p.dataset.dy || "0")
+            }))
+            .filter((v) => v.path_id && (v.dx !== 0 || v.dy !== 0));
+    }
+
+    window.getVectorAdjustments = getVectorAdjustments;
+
+    function emitVectorAdjustments() {
+        const adjustments = getVectorAdjustments();
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage(
+                {
+                    type: "vector-adjustments-updated",
+                    adjustments: adjustments
+                },
+                "*"
+            );
+        }
+    }
+
+    function hydrateVectorAdjustments() {
+        if (!Array.isArray(INITIAL_VECTOR_ADJUSTMENTS)) return;
+
+        INITIAL_VECTOR_ADJUSTMENTS.forEach((entry) => {
+            if (!entry || !entry.path_id) return;
+            const el = document.getElementById(entry.path_id);
+            if (!el) return;
+            applyPathTransform(el, Number(entry.dx) || 0, Number(entry.dy) || 0);
+        });
+    }
+
+    function wirePathDragging() {
+        document.querySelectorAll("svg.vector-layer path").forEach((path) => {
+            path.addEventListener("mousedown", (e) => {
+                e.stopPropagation();
+                if (mode !== "area") return;
+
+                draggingPath = path;
+                dragStart = {
+                    x: e.clientX,
+                    y: e.clientY,
+                    dx: parseFloat(path.dataset.dx || "0"),
+                    dy: parseFloat(path.dataset.dy || "0")
+                };
+            });
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (!draggingPath || !dragStart) return;
+            const nextDx = dragStart.dx + (e.clientX - dragStart.x) / SCALE;
+            const nextDy = dragStart.dy + (e.clientY - dragStart.y) / SCALE;
+            applyPathTransform(draggingPath, nextDx, nextDy);
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (!draggingPath) return;
+            draggingPath = null;
+            dragStart = null;
+            emitVectorAdjustments();
+        });
+    }
 
     function setMode(nextMode) {
         mode = nextMode;
@@ -222,11 +299,13 @@
         });
 
         document.querySelectorAll("svg.vector-layer path").forEach((p) => {
+            const dx = parseFloat(p.dataset.dx || "0");
+            const dy = parseFloat(p.dataset.dy || "0");
             const box = {
-                left: parseFloat(p.dataset.x0) * SCALE,
-                right: parseFloat(p.dataset.x1) * SCALE,
-                top: parseFloat(p.dataset.y0) * SCALE,
-                bottom: parseFloat(p.dataset.y1) * SCALE
+                left: (parseFloat(p.dataset.x0) + dx) * SCALE,
+                right: (parseFloat(p.dataset.x1) + dx) * SCALE,
+                top: (parseFloat(p.dataset.y0) + dy) * SCALE,
+                bottom: (parseFloat(p.dataset.y1) + dy) * SCALE
             };
 
             p.style.display = intersects(box, selection) ? "" : "none";
@@ -383,4 +462,7 @@
     if (!hydrated && !INITIAL_AREA_PDF) {
         startNewPickedTextItem();
     }
+
+    hydrateVectorAdjustments();
+    wirePathDragging();
 })();

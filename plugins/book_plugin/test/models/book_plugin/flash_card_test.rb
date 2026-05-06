@@ -22,6 +22,7 @@ module BookPlugin
       assert card.valid?
       assert_equal({}, card.areas_to_show)
       assert_equal([], card.items_to_remember)
+      assert_equal([], card.vector_adjustments)
     end
 
     test "creates initial recall state" do

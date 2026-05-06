@@ -27,6 +27,17 @@ module BookPlugin
       assert_includes s, "const SCALE = 2.0;"
       assert_includes s, "const INITIAL_AREA_PDF = null;"
       assert_includes s, "const INITIAL_PICKED_TEXT_GROUPS = null;"
+      assert_includes s, "const INITIAL_VECTOR_ADJUSTMENTS = [];"
+    end
+
+    test "build embeds initial vector adjustments json in script" do
+      s = PdfSelectionScript.build(
+        scale: 2.0,
+        initial_area: nil,
+        initial_vector_adjustments: [{ "path_id" => "vector-path-1", "dx" => 1, "dy" => 2 }]
+      )
+      assert_includes s,
+                      'const INITIAL_VECTOR_ADJUSTMENTS = [{"path_id":"vector-path-1","dx":1,"dy":2}];'
     end
   end
 end

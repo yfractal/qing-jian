@@ -215,6 +215,36 @@ module BookPlugin
       refute_includes html, "flash-card-study-viewport"
     end
 
+    test "renders vector path ids and initial transform metadata" do
+      layout = [
+        {
+          "type" => "vector",
+          "bbox" => [0, 0, 10, 10],
+          "paths" => [
+            { "d" => "M 0 0 L 9 9", "stroke" => "#111111", "stroke_width" => 1, "fill" => "none", "bbox" => [0, 0, 9, 9] }
+          ]
+        }
+      ]
+
+      html = PdfPageHtmlRenderer.render(
+        layout: layout,
+        width: 10,
+        height: 10,
+        scale: 1,
+        load_js: true,
+        mode: :authoring,
+        items_to_remember: [],
+        areas_to_show: {},
+        vector_adjustments: [{ "path_id" => "vector-path-1", "dx" => 5, "dy" => -3 }]
+      )
+
+      assert_includes html, 'id="vector-path-1"'
+      assert_includes html, 'data-dx="5"'
+      assert_includes html, 'data-dy="-3"'
+      assert_includes html, 'transform="translate(5, -3)"'
+      assert_includes html, "INITIAL_VECTOR_ADJUSTMENTS"
+    end
+
     test "study mode without areas_to_show omits viewport wrapper" do
       layout = [
         { "type" => "text", "text" => "Only", "bbox" => [0, 0, 10, 10], "font_size" => 12 }
