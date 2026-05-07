@@ -179,36 +179,6 @@
   width: 100%;
 }
 
-/* Headword + IPA + play: wrap to the next line instead of truncating with ellipsis. */
-.word-flash-remember-page.flash-card-remember-page .question-word-with-play {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  max-width: 100%;
-}
-
-.word-flash-remember-page.flash-card-remember-page .question-word-with-play h2 {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 100%;
-  overflow-wrap: break-word;
-}
-
-.word-flash-remember-page.flash-card-remember-page .question-word-with-play .question-audio-pronunciation {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 100%;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.word-flash-remember-page.flash-card-remember-page .question-word-with-play .pronunciation-icon-button {
-  flex-shrink: 0;
-}
-
 @media (max-width: 900px) {
   .flash-card-remember-page .recall-layout {
     grid-template-columns: 1fr;
