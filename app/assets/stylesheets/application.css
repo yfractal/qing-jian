@@ -538,18 +538,19 @@ input[type="submit"].button {
   align-self: center;
 }
 
-/* Word flash remember (words#show + flash_remember): full-width row; base .question-word-with-play rules apply. */
+/* Word flash remember: words#show + flash_remember headword row; example reveal lives on /word_flash_remember */
 .word-show-flash-remember-page .question-word-with-play {
   max-width: 100%;
 }
 
-.word-show-flash-remember-page .word-flash-example-reveal {
+/* Word flash remember index (/word_flash_remember): optional example sentence reveal */
+.word-flash-remember-page .word-flash-example-reveal {
   margin-top: 1.25rem;
   padding-top: 1.1rem;
   border-top: 1px solid #e2e8f0;
 }
 
-.word-show-flash-remember-page .word-flash-example-toggle {
+.word-flash-remember-page .word-flash-example-toggle {
   padding: 0.5rem 0.95rem;
   min-height: 2.75rem;
   font-weight: 650;
@@ -557,7 +558,7 @@ input[type="submit"].button {
   border-radius: 12px;
 }
 
-.word-show-flash-remember-page .word-flash-example-toggle:disabled {
+.word-flash-remember-page .word-flash-example-toggle:disabled {
   opacity: 0.62;
   cursor: not-allowed;
   color: #94a3b8;
@@ -565,7 +566,7 @@ input[type="submit"].button {
   border-color: #e2e8f0;
 }
 
-.word-show-flash-remember-page .word-flash-example-panel {
+.word-flash-remember-page .word-flash-example-panel {
   margin-top: 0.75rem;
   padding: 0.95rem 1rem 1rem;
   border: 1px solid #e2e8f0;
@@ -574,7 +575,7 @@ input[type="submit"].button {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-.word-show-flash-remember-page .word-flash-example-heading {
+.word-flash-remember-page .word-flash-example-heading {
   margin: 0 0 0.5rem;
   color: #475569;
   font-size: 0.78rem;
@@ -583,17 +584,17 @@ input[type="submit"].button {
   text-transform: uppercase;
 }
 
-.word-show-flash-remember-page .word-flash-example-body {
+.word-flash-remember-page .word-flash-example-body {
   color: #1e293b;
   font-size: 1.02rem;
   line-height: 1.55;
 }
 
-.word-show-flash-remember-page .word-flash-example-body p {
+.word-flash-remember-page .word-flash-example-body p {
   margin: 0 0 0.65rem;
 }
 
-.word-show-flash-remember-page .word-flash-example-body p:last-child {
+.word-flash-remember-page .word-flash-example-body p:last-child {
   margin-bottom: 0;
 }
 
@@ -1087,7 +1088,7 @@ input[type="submit"].button-large {
   .remember-header .button,
   .actions .button,
   .actions input[type="submit"].button,
-  .word-show-flash-remember-page .word-flash-example-toggle {
+  .word-flash-remember-page .word-flash-example-toggle {
     width: 100%;
     box-sizing: border-box;
     text-align: center;

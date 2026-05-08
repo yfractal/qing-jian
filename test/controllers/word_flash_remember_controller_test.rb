@@ -45,4 +45,35 @@ class WordFlashRememberControllerTest < ActionDispatch::IntegrationTest
       assert_match(/another.*pass/i, flash[:notice])
     end
   end
+
+  test "index shows example reveal when word has example sentence" do
+    travel_to Time.zone.local(@day.year, @day.month, @day.day, 10, 0, 0) do
+      w = Word.create!(word: "example-#{SecureRandom.hex(4)}", english_meaning: "x", chinese_meaning: "y")
+      w.update_column(:example_sentence, "Custom example for recall.")
+      w.word_recall_state.update!(due_day: @day)
+
+      get word_flash_remember_path, params: { reviewed_word_ids: "#{@due.id},#{@other.id}" }
+
+      assert_response :success
+      assert_select "input[name='word_self_recall_record[word_id]'][value='#{w.id}']", count: 1
+      assert_select ".word-flash-example-reveal button.word-flash-example-toggle", text: "Show example sentence"
+      assert_select "#word-flash-example-panel", text: /Custom example for recall/
+      assert_select "#word-flash-example-panel[hidden]"
+    end
+  end
+
+  test "index disables example reveal when sentence missing" do
+    travel_to Time.zone.local(@day.year, @day.month, @day.day, 10, 0, 0) do
+      w = Word.create!(word: "no-example-#{SecureRandom.hex(4)}", english_meaning: "x", chinese_meaning: "y")
+      w.update_column(:example_sentence, nil)
+      w.word_recall_state.update!(due_day: @day)
+
+      get word_flash_remember_path, params: { reviewed_word_ids: "#{@due.id},#{@other.id}" }
+
+      assert_response :success
+      assert_select ".word-flash-example-reveal button.word-flash-example-toggle[disabled]"
+      assert_select ".word-flash-example-reveal button.word-flash-example-toggle", text: "No example sentence yet"
+      assert_select "#word-flash-example-panel", count: 0
+    end
+  end
 end
