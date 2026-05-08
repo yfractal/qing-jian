@@ -8,8 +8,8 @@ module Llm
   class OpenRouterWordMeaningClient
     class Error < StandardError; end
 
-    MeaningResult = Data.define(:english_meaning, :chinese_meaning, :pronunciation)
-    BatchMeaningResult = Data.define(:word, :english_meaning, :chinese_meaning, :pronunciation)
+    MeaningResult = Data.define(:english_meaning, :chinese_meaning, :pronunciation, :example_sentence)
+    BatchMeaningResult = Data.define(:word, :english_meaning, :chinese_meaning, :pronunciation, :example_sentence)
 
     OPENROUTER_URI = URI("https://openrouter.ai/api/v1/chat/completions")
     DEFAULT_MODEL = "deepseek/deepseek-v4-pro"
@@ -84,11 +84,12 @@ module Llm
           {
             role: "user",
             content: <<~PROMPT.squish
-              For the English word "#{word.gsub(/\"/, "'")}", reply with ONLY a single JSON object (no markdown, no code fences) with exactly three string keys:
+              For the English word "#{word.gsub(/\"/, "'")}", reply with ONLY a single JSON object (no markdown, no code fences) with exactly four string keys:
               "english_meaning" — a concise English definition or gloss suitable for a learner;
               "chinese_meaning" — a concise Chinese translation or gloss for the same sense;
-              "pronunciation" — a concise pronunciation string for the English word (IPA preferred, otherwise clear phonetic spelling).
-              Example shape: {"english_meaning":"...","chinese_meaning":"...","pronunciation":"..."}
+              "pronunciation" — a concise pronunciation string for the English word (IPA preferred, otherwise clear phonetic spelling);
+              "example_sentence" — ONE short, simple English sentence that includes the exact word "#{word.gsub(/\"/, "'")}" and helps memorization (avoid rare vocabulary; keep it concrete).
+              Example shape: {"english_meaning":"...","chinese_meaning":"...","pronunciation":"...","example_sentence":"..."}
             PROMPT
           }
         ]
@@ -104,12 +105,13 @@ module Llm
             role: "user",
             content: <<~PROMPT.squish
               For the following list of English words: [#{escaped_words}], reply with ONLY a JSON array (no markdown, no code fences).
-              Each array element must be an object with exactly four string keys:
+              Each array element must be an object with exactly five string keys:
               "word" — the input word;
               "english_meaning" — a concise English definition or gloss suitable for a learner;
               "chinese_meaning" — a concise Chinese translation or gloss for the same sense;
-              "pronunciation" — a concise pronunciation string for the English word (IPA preferred, otherwise clear phonetic spelling).
-              Example shape: [{"word":"cat","english_meaning":"...","chinese_meaning":"...","pronunciation":"..."}]
+              "pronunciation" — a concise pronunciation string for the English word (IPA preferred, otherwise clear phonetic spelling);
+              "example_sentence" — ONE short, simple English sentence that includes the exact "word" value and helps memorization (avoid rare vocabulary; keep it concrete).
+              Example shape: [{"word":"cat","english_meaning":"...","chinese_meaning":"...","pronunciation":"...","example_sentence":"..."}]
             PROMPT
           }
         ]
@@ -125,14 +127,16 @@ module Llm
       en = inner["english_meaning"]
       zh = inner["chinese_meaning"]
       pronunciation = inner["pronunciation"]
-      if en.to_s.strip.empty? || zh.to_s.strip.empty? || pronunciation.to_s.strip.empty?
-        raise Error, "OpenRouter JSON missing english_meaning or chinese_meaning or pronunciation"
+      example_sentence = inner["example_sentence"]
+      if en.to_s.strip.empty? || zh.to_s.strip.empty? || pronunciation.to_s.strip.empty? || example_sentence.to_s.strip.empty?
+        raise Error, "OpenRouter JSON missing english_meaning, chinese_meaning, pronunciation, or example_sentence"
       end
 
       MeaningResult.new(
         english_meaning: en.to_s.strip,
         chinese_meaning: zh.to_s.strip,
-        pronunciation: pronunciation.to_s.strip
+        pronunciation: pronunciation.to_s.strip,
+        example_sentence: example_sentence.to_s.strip
       )
     rescue JSON::ParserError => e
       raise Error, "Invalid JSON from OpenRouter: #{e.message}"
@@ -151,15 +155,17 @@ module Llm
         english_meaning = entry["english_meaning"]
         chinese_meaning = entry["chinese_meaning"]
         pronunciation = entry["pronunciation"]
-        if word.to_s.strip.empty? || english_meaning.to_s.strip.empty? || chinese_meaning.to_s.strip.empty? || pronunciation.to_s.strip.empty?
-          raise Error, "OpenRouter JSON missing required fields (word, english_meaning, chinese_meaning, pronunciation)"
+        example_sentence = entry["example_sentence"]
+        if word.to_s.strip.empty? || english_meaning.to_s.strip.empty? || chinese_meaning.to_s.strip.empty? || pronunciation.to_s.strip.empty? || example_sentence.to_s.strip.empty?
+          raise Error, "OpenRouter JSON missing required fields (word, english_meaning, chinese_meaning, pronunciation, example_sentence)"
         end
 
         BatchMeaningResult.new(
           word: word.to_s.strip,
           english_meaning: english_meaning.to_s.strip,
           chinese_meaning: chinese_meaning.to_s.strip,
-          pronunciation: pronunciation.to_s.strip
+          pronunciation: pronunciation.to_s.strip,
+          example_sentence: example_sentence.to_s.strip
         )
       end
     rescue JSON::ParserError => e

@@ -34,3 +34,6 @@ The OpenRouter clients (`Llm::OpenRouterWordMeaningClient` and `Llm::OpenRouterS
 - Backfill questions for words missing questions:
   - `bin/rails 'words:backfill_questions'`
   - optional batch size: `bin/rails 'words:backfill_questions[50]'`
+- Backfill memorization example sentences (LLM) for words missing `example_sentence`:
+  - `bin/rails 'words:backfill_example_sentences'`
+  - optional batch size: `bin/rails 'words:backfill_example_sentences[50]'`

@@ -41,6 +41,11 @@
     <%= f.text_area :chinese_meaning, rows: 4, required: true %>
   </div>
 
+  <div class="field">
+    <%= f.label :example_sentence, "Example sentence" %>
+    <%= f.text_area :example_sentence, rows: 3, placeholder: "A short sentence using the word" %>
+  </div>
+
   <div class="actions">
     <%= f.submit word.persisted? ? "Update word" : "Save word", class: "button button-primary" %>
     <%= link_to "Cancel", words_path, class: "button button-secondary" %>

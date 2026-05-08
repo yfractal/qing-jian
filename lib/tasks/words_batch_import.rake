@@ -26,7 +26,8 @@ namespace :words do
         word: item.word,
         english_meaning: item.english_meaning,
         chinese_meaning: item.chinese_meaning,
-        pronunciation: item.pronunciation
+        pronunciation: item.pronunciation,
+        example_sentence: item.example_sentence
       )
 
       if word.save

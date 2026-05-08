@@ -8,7 +8,8 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
       Llm::OpenRouterWordMeaningClient::MeaningResult.new(
         english_meaning: "Definition for #{word}",
         chinese_meaning: "释义",
-        pronunciation: "/#{word}/"
+        pronunciation: "/#{word}/",
+        example_sentence: "Example for #{word}"
       )
     end
 
@@ -21,7 +22,8 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
           word: trimmed,
           english_meaning: "Definition for #{trimmed}",
           chinese_meaning: "释义",
-          pronunciation: "/#{trimmed}/"
+          pronunciation: "/#{trimmed}/",
+          example_sentence: "Example for #{trimmed}"
         )
       end
     end
@@ -70,6 +72,7 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     assert_match "Definition for hello", @response.body
     assert_match "释义", @response.body
     assert_match "/hello/", @response.body
+    assert_match "Example for hello", @response.body
     assert_select "label", text: "Pronunciation"
     assert_select "input[name='word[pronunciation]'][value='/hello/']"
     assert_select "button[data-pronunciation-play][aria-label='Play sound']"
@@ -123,6 +126,7 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, body.fetch("meanings").size
     assert_equal "cat", body.fetch("meanings")[0].fetch("word")
     assert_equal "/cat/", body.fetch("meanings")[0].fetch("pronunciation")
+    assert_equal "Example for cat", body.fetch("meanings")[0].fetch("example_sentence")
   end
 
   test "batch_lookup validates words param" do
@@ -168,6 +172,18 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     post batch_create_words_url, params: { words: [] }, as: :json
     assert_response :unprocessable_entity
     assert_equal "words array cannot be empty", JSON.parse(@response.body).fetch("error")
+  end
+
+  test "batch_create persists example_sentence when provided" do
+    payload = [
+      { word: "example_batch_#{Time.now.to_i}", english_meaning: "m1", chinese_meaning: "中1", example_sentence: "I will remember this word." }
+    ]
+
+    post batch_create_words_url, params: { words: payload }, as: :json
+    assert_response :created
+
+    created_word = Word.find_by!(word: payload[0][:word])
+    assert_equal "I will remember this word.", created_word.example_sentence
   end
 
   test "batch_create persists pronunciation when provided" do

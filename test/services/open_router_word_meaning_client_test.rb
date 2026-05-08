@@ -22,7 +22,12 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
   end
 
   test "lookup returns MeaningResult on success" do
-    inner = { "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫", "pronunciation" => "/kæt/" }
+    inner = {
+      "english_meaning" => "A small carnivorous mammal.",
+      "chinese_meaning" => "猫",
+      "pronunciation" => "/kæt/",
+      "example_sentence" => "The cat sat by the window."
+    }
     outer = {
       "choices" => [
         { "message" => { "content" => JSON.generate(inner) } }
@@ -36,6 +41,7 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
     assert_equal "A small carnivorous mammal.", result.english_meaning
     assert_equal "猫", result.chinese_meaning
     assert_equal "/kæt/", result.pronunciation
+    assert_equal "The cat sat by the window.", result.example_sentence
   end
 
   test "lookup raises on non success status" do
@@ -70,7 +76,7 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
     client = Llm::OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
 
     error = assert_raises(Llm::OpenRouterWordMeaningClient::Error) { client.lookup("cat") }
-    assert_match(/missing english_meaning or chinese_meaning or pronunciation/, error.message)
+    assert_match(/missing english_meaning, chinese_meaning, pronunciation, or example_sentence/, error.message)
   end
 
   test "lookup raises when pronunciation missing" do
@@ -79,13 +85,19 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
     client = Llm::OpenRouterWordMeaningClient.new(api_key: @api_key, requester: ->(_body) { response })
 
     error = assert_raises(Llm::OpenRouterWordMeaningClient::Error) { client.lookup("cat") }
-    assert_match(/missing english_meaning or chinese_meaning or pronunciation/, error.message)
+    assert_match(/missing english_meaning, chinese_meaning, pronunciation, or example_sentence/, error.message)
   end
 
   test "default model is deepseek v4 pro when env model unset" do
     captured = nil
     response = OpenStruct.new(code: "200", body: JSON.generate(
-      "choices" => [ { "message" => { "content" => '{"english_meaning":"a","chinese_meaning":"b","pronunciation":"x"}' } } ]
+      "choices" => [
+        {
+          "message" => {
+            "content" => '{"english_meaning":"a","chinese_meaning":"b","pronunciation":"x","example_sentence":"a x b."}'
+          }
+        }
+      ]
     ))
     old_model = ENV.fetch("OPENROUTER_MODEL", nil)
     ENV.delete("OPENROUTER_MODEL")
@@ -111,8 +123,20 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
 
   test "batch_lookup returns BatchMeaningResult list on success" do
     inner = [
-      { "word" => "cat", "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫", "pronunciation" => "/kæt/" },
-      { "word" => "dog", "english_meaning" => "A domesticated carnivorous mammal.", "chinese_meaning" => "狗", "pronunciation" => "/dɔɡ/" }
+      {
+        "word" => "cat",
+        "english_meaning" => "A small carnivorous mammal.",
+        "chinese_meaning" => "猫",
+        "pronunciation" => "/kæt/",
+        "example_sentence" => "The cat sat quietly."
+      },
+      {
+        "word" => "dog",
+        "english_meaning" => "A domesticated carnivorous mammal.",
+        "chinese_meaning" => "狗",
+        "pronunciation" => "/dɔɡ/",
+        "example_sentence" => "The dog ran fast."
+      }
     ]
     outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
@@ -124,12 +148,19 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
     assert_equal "cat", results[0].word
     assert_equal "狗", results[1].chinese_meaning
     assert_equal "/dɔɡ/", results[1].pronunciation
+    assert_equal "The dog ran fast.", results[1].example_sentence
   end
 
   test "batch_lookup strips blanks and deduplicates words before request" do
     captured = nil
     inner = [
-      { "word" => "cat", "english_meaning" => "A small carnivorous mammal.", "chinese_meaning" => "猫", "pronunciation" => "/kæt/" }
+      {
+        "word" => "cat",
+        "english_meaning" => "A small carnivorous mammal.",
+        "chinese_meaning" => "猫",
+        "pronunciation" => "/kæt/",
+        "example_sentence" => "The cat purred."
+      }
     ]
     outer = { "choices" => [ { "message" => { "content" => JSON.generate(inner) } } ] }
     response = OpenStruct.new(code: "200", body: JSON.generate(outer))
@@ -174,7 +205,13 @@ class OpenRouterWordMeaningClientTest < ActiveSupport::TestCase
     log_output = StringIO.new
     logger = Logger.new(log_output)
     response = OpenStruct.new(code: "200", body: JSON.generate(
-      "choices" => [ { "message" => { "content" => '{"english_meaning":"a","chinese_meaning":"b","pronunciation":"x"}' } } ]
+      "choices" => [
+        {
+          "message" => {
+            "content" => '{"english_meaning":"a","chinese_meaning":"b","pronunciation":"x","example_sentence":"a x b."}'
+          }
+        }
+      ]
     ))
 
     old_logger = Rails.logger
