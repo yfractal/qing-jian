@@ -2,6 +2,7 @@
 (function () {
     const btnPickArea = document.getElementById("btn-pick-area");
     const btnPickText = document.getElementById("btn-pick-text");
+    const btnDragVectors = document.getElementById("btn-drag-vectors");
     const page = document.querySelector(".page");
     const selectionBox = document.getElementById("selection-box");
     const SCALE = 1.0;
@@ -68,7 +69,10 @@
         document.querySelectorAll("svg.vector-layer path").forEach((path) => {
             path.addEventListener("mousedown", (e) => {
                 e.stopPropagation();
-                if (mode !== "area") return;
+                if (mode !== "vector") return;
+
+                // Prevent text selection / image dragging while moving a path.
+                if (typeof e.preventDefault === "function") e.preventDefault();
 
                 draggingPath = path;
                 dragStart = {
@@ -101,11 +105,29 @@
         selectionBox.style.display = "none";
         btnPickArea.classList.toggle("is-active", mode === "area");
         btnPickText.classList.toggle("is-active", mode === "text");
+        if (btnDragVectors) {
+            btnDragVectors.classList.toggle("is-active", mode === "vector");
+        }
+
+        // In "vector" mode only: bring SVG above text so paths receive pointer events.
+        const vectorLayer = document.querySelector("svg.vector-layer");
+        if (vectorLayer) {
+            vectorLayer.style.zIndex = mode === "vector" ? "6" : "";
+        }
+        document.querySelectorAll(".text, .image").forEach((el) => {
+            el.style.pointerEvents = mode === "vector" ? "none" : "";
+        });
     }
 
     btnPickArea.addEventListener("click", () => {
         setMode("area");
     });
+
+    if (btnDragVectors) {
+        btnDragVectors.addEventListener("click", () => {
+            setMode("vector");
+        });
+    }
 
     function buildPickedTextItemsForLog() {
         const items = pickedTextItems.map((item) => item.slice());

@@ -310,6 +310,7 @@ module BookPlugin
         <div class="toolbar">
             <button id="btn-pick-text" type="button"#{text_btn_class}>Pick items to remember</button>
             <button id="btn-pick-area" type="button"#{area_btn_class}>Pick area to show</button>
+            <button id="btn-drag-vectors" type="button">Drag vectors</button>
         </div>
         <div class="page">
       HTML

@@ -47,6 +47,7 @@ module BookPlugin
         refute_includes html, "data:image/png"
         assert_includes html, "vector-layer"
         assert_includes html, "btn-pick-area"
+        assert_includes html, "btn-drag-vectors"
         assert_includes html, "const SCALE = 1.5;"
       end
     end
