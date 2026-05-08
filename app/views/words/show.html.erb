@@ -41,6 +41,8 @@
         <dd><%= simple_format(@word.english_meaning) %></dd>
         <dt>Chinese meaning</dt>
         <dd><%= simple_format(@word.chinese_meaning) %></dd>
+        <dt>Example sentence</dt>
+        <dd><%= simple_format(@word.example_sentence.presence || "—") %></dd>
       </dl>
 
       <div class="actions">
@@ -103,6 +105,8 @@
         <dd><%= simple_format(@word.english_meaning.presence || "—") %></dd>
         <dt>Chinese</dt>
         <dd><%= simple_format(@word.chinese_meaning.presence || "—") %></dd>
+        <dt>Example sentence</dt>
+        <dd><%= simple_format(@word.example_sentence.presence || "—") %></dd>
       </dl>
 
       <footer class="word-show-card-footer">
