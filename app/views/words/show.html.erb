@@ -1,6 +1,8 @@
 <% content_for :title, @word.word %>
 
 <% if params[:flash_remember].present? %>
+  <% flash_example_sentence = @word.example_sentence.to_s.strip %>
+  <% flash_has_example = flash_example_sentence.present? %>
   <main class="remember-page word-show-flash-remember-page">
     <header class="remember-header">
       <div>
@@ -41,9 +43,35 @@
         <dd><%= simple_format(@word.english_meaning) %></dd>
         <dt>Chinese meaning</dt>
         <dd><%= simple_format(@word.chinese_meaning) %></dd>
-        <dt>Example sentence</dt>
-        <dd><%= simple_format(@word.example_sentence.presence || "—") %></dd>
       </dl>
+
+      <div class="word-flash-example-reveal">
+        <button
+          type="button"
+          class="button button-secondary word-flash-example-toggle"
+          <%= tag.attributes(disabled: true) unless flash_has_example %>
+          <% if flash_has_example %>
+            data-word-flash-example-toggle
+            data-label-show="Show example sentence"
+            data-label-hide="Hide example sentence"
+            aria-expanded="false"
+            aria-controls="word-flash-example-panel"
+          <% end %>>
+          <%= flash_has_example ? "Show example sentence" : "No example sentence yet" %>
+        </button>
+        <% if flash_has_example %>
+          <div
+            id="word-flash-example-panel"
+            class="word-flash-example-panel"
+            hidden
+            role="region"
+            aria-labelledby="word-flash-example-heading"
+            aria-hidden="true">
+            <p id="word-flash-example-heading" class="word-flash-example-heading">Example sentence</p>
+            <div class="word-flash-example-body"><%= simple_format(flash_example_sentence) %></div>
+          </div>
+        <% end %>
+      </div>
 
       <div class="actions">
         <%= link_to "Next word",
@@ -66,6 +94,33 @@
         utterance.lang = "en-US";
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(utterance);
+      }
+    });
+
+    document.addEventListener("click", function(event) {
+      const toggle = event.target.closest("[data-word-flash-example-toggle]");
+      if (!toggle || toggle.disabled) return;
+
+      const panelId = toggle.getAttribute("aria-controls");
+      if (!panelId) return;
+
+      const panel = document.getElementById(panelId);
+      if (!panel) return;
+
+      const showLabel = (toggle.dataset.labelShow || "").trim() || "Show example sentence";
+      const hideLabel = (toggle.dataset.labelHide || "").trim() || "Hide example sentence";
+      const isOpen = toggle.getAttribute("aria-expanded") === "true";
+
+      if (isOpen) {
+        panel.hidden = true;
+        panel.setAttribute("aria-hidden", "true");
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.textContent = showLabel;
+      } else {
+        panel.hidden = false;
+        panel.setAttribute("aria-hidden", "false");
+        toggle.setAttribute("aria-expanded", "true");
+        toggle.textContent = hideLabel;
       }
     });
   </script>

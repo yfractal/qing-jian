@@ -230,6 +230,28 @@ class WordsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", root_path(reviewed_word_ids: ids)
   end
 
+  test "show with flash remember hides example until toggle when present" do
+    w = words(:bird)
+    w.update_column(:example_sentence, "The bird sang at dawn.")
+
+    get word_url(w, params: { flash_remember: "1" })
+    assert_response :success
+    assert_select ".word-flash-example-reveal button.word-flash-example-toggle", text: "Show example sentence"
+    assert_select "#word-flash-example-panel", text: /The bird sang at dawn/
+    assert_select "#word-flash-example-panel[hidden]"
+  end
+
+  test "show with flash remember disables example toggle when absent" do
+    w = words(:cat)
+    w.update_column(:example_sentence, nil)
+
+    get word_url(w, params: { flash_remember: "1" })
+    assert_response :success
+    assert_select ".word-flash-example-reveal button.word-flash-example-toggle[disabled]"
+    assert_select ".word-flash-example-reveal button.word-flash-example-toggle", text: "No example sentence yet"
+    assert_select "#word-flash-example-panel", count: 0
+  end
+
   test "show without flash_remember keeps edit delete and all words" do
     w = words(:cat)
     get word_url(w)
