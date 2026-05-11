@@ -11,6 +11,9 @@
 
   <%= form_with model: [book, flash_card], local: true do |f| %>
     <%= f.hidden_field :book_html_id, value: book_html.id %>
+    <% if local_assigns[:return_to].present? %>
+      <%= hidden_field_tag :return_to, local_assigns[:return_to] %>
+    <% end %>
 
     <%= f.label :areas_to_show, "Areas to show (JSON)" %>
     <%= text_area_tag "flash_card[areas_to_show]", flash_card.areas_to_show.to_json, id: "flash_card_areas_to_show", rows: 5 %>
@@ -21,6 +24,10 @@
     <%= hidden_field_tag "flash_card[vector_adjustments]",
                          flash_card.vector_adjustments.to_json,
                          id: "flash_card_vector_adjustments" %>
+
+    <%= hidden_field_tag "flash_card[text_adjustments]",
+                         flash_card.text_adjustments.to_json,
+                         id: "flash_card_text_adjustments" %>
 
     <%= f.submit(flash_card.persisted? ? "Update flash card" : "Create flash card", class: "button button-primary") %>
   <% end %>

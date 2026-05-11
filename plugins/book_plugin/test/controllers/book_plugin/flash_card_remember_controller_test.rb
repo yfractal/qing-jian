@@ -19,6 +19,8 @@ module BookPlugin
                     text: /I remembered/
       assert_select "form.answer-form button[name='flash_card_recall_record[is_correct]'][value='false']",
                     text: /Review again/
+      assert_select %(a[href*="/books/books/#{book.id}/flash_cards/#{card.id}/edit"]), text: "Edit flash card"
+      assert_select %(a[href*="return_to="]), text: "Edit flash card"
     end
 
     test "index excludes cards already reviewed in this pass" do

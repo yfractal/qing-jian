@@ -17,7 +17,8 @@ module BookPlugin
         mode:,
         areas_to_show: flash_card&.areas_to_show,
         items_to_remember: flash_card&.items_to_remember,
-        vector_adjustments: flash_card&.vector_adjustments
+        vector_adjustments: flash_card&.vector_adjustments,
+        text_adjustments: flash_card&.text_adjustments
       )
     end
 

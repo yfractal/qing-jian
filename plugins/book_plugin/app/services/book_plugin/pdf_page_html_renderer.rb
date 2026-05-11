@@ -8,7 +8,8 @@ module BookPlugin
   class PdfPageHtmlRenderer
     class << self
       def render(layout:, width:, height:, scale: 1.5, area: nil, load_js: true,
-                 mode: :authoring, areas_to_show: nil, items_to_remember: nil, vector_adjustments: nil)
+                 mode: :authoring, areas_to_show: nil, items_to_remember: nil,
+                 vector_adjustments: nil, text_adjustments: nil)
         new(
           layout: layout,
           width: width,
@@ -19,7 +20,8 @@ module BookPlugin
           mode: mode,
           areas_to_show: areas_to_show,
           items_to_remember: items_to_remember,
-          vector_adjustments: vector_adjustments
+          vector_adjustments: vector_adjustments,
+          text_adjustments: text_adjustments
         ).render
       end
     end
@@ -30,7 +32,8 @@ module BookPlugin
     VECTOR_BLACK = "#000000"
 
     def initialize(layout:, width:, height:, scale:, area:, load_js: true,
-                   mode: :authoring, areas_to_show: nil, items_to_remember: nil, vector_adjustments: nil)
+                   mode: :authoring, areas_to_show: nil, items_to_remember: nil,
+                   vector_adjustments: nil, text_adjustments: nil)
       @layout = layout
       @width = width.to_f
       @height = height.to_f
@@ -42,6 +45,8 @@ module BookPlugin
       @items_to_remember = items_to_remember
       @vector_adjustments_list = normalize_vector_adjustments_param(vector_adjustments)
       @vector_adjustments_by_path_id = @vector_adjustments_list.index_by { |h| h["path_id"] }
+      @text_adjustments_list = normalize_text_adjustments_param(text_adjustments)
+      @text_adjustments_by_element_id = @text_adjustments_list.index_by { |h| h["element_id"] }
     end
 
     def render
@@ -92,6 +97,28 @@ module BookPlugin
 
         {
           "path_id" => path_id,
+          "dx" => entry["dx"].to_f,
+          "dy" => entry["dy"].to_f
+        }
+      end
+    end
+
+    def normalize_text_adjustments_param(raw)
+      list =
+        case raw
+        when nil then []
+        when Array then raw
+        else []
+        end
+
+      list.filter_map do |entry|
+        next unless entry.is_a?(Hash)
+
+        element_id = (entry["element_id"] || entry[:element_id]).to_s
+        next if element_id.empty?
+
+        {
+          "element_id" => element_id,
           "dx" => entry["dx"].to_f,
           "dy" => entry["dy"].to_f
         }
@@ -283,6 +310,24 @@ module BookPlugin
             background: rgba(34, 197, 94, 0.22);
             border-radius: 4px;
         }
+
+        .page.mode-drag-items .text {
+            cursor: move;
+            z-index: 7;
+        }
+
+        .page.mode-drag-items svg.vector-layer {
+            z-index: 6;
+            pointer-events: none;
+        }
+
+        .page.mode-drag-items svg.vector-layer path {
+            pointer-events: visiblePainted;
+        }
+
+        .page.mode-drag-items .image {
+            pointer-events: none;
+        }
         #{study_viewport_css}
         </style>
         </head>
@@ -310,7 +355,7 @@ module BookPlugin
         <div class="toolbar">
             <button id="btn-pick-text" type="button"#{text_btn_class}>Pick items to remember</button>
             <button id="btn-pick-area" type="button"#{area_btn_class}>Pick area to show</button>
-            <button id="btn-drag-vectors" type="button">Drag vectors</button>
+            <button id="btn-drag-items" type="button">Drag Items</button>
         </div>
         <div class="page">
       HTML
@@ -319,14 +364,25 @@ module BookPlugin
     def text_div(el, x0, y0, s, element_id:)
       text = ERB::Util.html_escape(el.fetch("text"))
       fs = el.fetch("font_size") * @scale * 0.9
+      adj = @text_adjustments_by_element_id[element_id] || { "dx" => 0.0, "dy" => 0.0 }
+      dx = adj["dx"].to_f
+      dy = adj["dy"].to_f
+      dx_attr = fmt_num(dx)
+      dy_attr = fmt_num(dy)
+      tx_px = fmt_num(dx * @scale)
+      ty_px = fmt_num(dy * @scale)
+      transform = (dx != 0 || dy != 0) ? "transform: translate(#{tx_px}px, #{ty_px}px);" : ""
       <<~HTML
         <div class="text"
             id="#{element_id}"
             category="text"
+            data-dx="#{dx_attr}"
+            data-dy="#{dy_attr}"
             style="
                 left:#{s.call(x0)}px;
                 top:#{s.call(y0)}px;
                 font-size:#{fs}px;
+                #{transform}
             ">
             #{text}
         </div>
@@ -471,7 +527,8 @@ module BookPlugin
           scale: @scale,
           initial_area: resolved_initial_area_pdf,
           initial_picked_text_groups: picked_text_groups_for_script,
-          initial_vector_adjustments: @vector_adjustments_list
+          initial_vector_adjustments: @vector_adjustments_list,
+          initial_text_adjustments: @text_adjustments_list
         )
         chunks << <<~HTML
           <script>

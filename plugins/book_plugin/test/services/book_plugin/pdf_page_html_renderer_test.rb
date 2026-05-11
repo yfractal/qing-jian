@@ -47,7 +47,8 @@ module BookPlugin
         refute_includes html, "data:image/png"
         assert_includes html, "vector-layer"
         assert_includes html, "btn-pick-area"
-        assert_includes html, "btn-drag-vectors"
+        assert_includes html, "btn-drag-items"
+        assert_includes html, "Drag Items"
         assert_includes html, "const SCALE = 1.5;"
       end
     end
@@ -244,6 +245,30 @@ module BookPlugin
       assert_includes html, 'data-dy="-3"'
       assert_includes html, 'transform="translate(5, -3)"'
       assert_includes html, "INITIAL_VECTOR_ADJUSTMENTS"
+    end
+
+    test "renders text adjustments on text divs and embeds initial constant in script" do
+      layout = [
+        { "type" => "text", "text" => "Hi", "bbox" => [10, 20, 50, 35], "font_size" => 12 }
+      ]
+
+      html = PdfPageHtmlRenderer.render(
+        layout: layout,
+        width: 100,
+        height: 200,
+        scale: 2,
+        load_js: true,
+        mode: :authoring,
+        items_to_remember: [],
+        areas_to_show: {},
+        text_adjustments: [{ "element_id" => "el-1", "dx" => 3, "dy" => -2 }]
+      )
+
+      assert_includes html, 'id="el-1"'
+      assert_includes html, 'data-dx="3"'
+      assert_includes html, 'data-dy="-2"'
+      assert_includes html, "transform: translate(6px, -4px)"
+      assert_includes html, "INITIAL_TEXT_ADJUSTMENTS"
     end
 
     test "study mode without areas_to_show omits viewport wrapper" do

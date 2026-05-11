@@ -172,7 +172,8 @@ module BookPlugin
             book_html_id: book_html.id,
             areas_to_show: "{\"x\":1}",
             items_to_remember_text: "alpha\nbeta",
-            vector_adjustments: '[{"path_id":"vector-path-1","dx":1.5,"dy":-2.0}]'
+            vector_adjustments: '[{"path_id":"vector-path-1","dx":1.5,"dy":-2.0}]',
+            text_adjustments: '[{"element_id":"el-1","dx":2,"dy":1}]'
           }
         }
       end
@@ -181,6 +182,10 @@ module BookPlugin
       assert_equal(
         [{ "path_id" => "vector-path-1", "dx" => 1.5, "dy" => -2.0 }],
         card.vector_adjustments
+      )
+      assert_equal(
+        [{ "element_id" => "el-1", "dx" => 2.0, "dy" => 1.0 }],
+        card.text_adjustments
       )
 
       assert_redirected_to "/books/books/#{book.id}"
@@ -254,6 +259,36 @@ module BookPlugin
       assert_includes @response.body, "INITIAL_VECTOR_ADJUSTMENTS"
     end
 
+    test "edit renders text adjustments in preview and hidden field" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+      book_html = BookHtml.create!(
+        book:,
+        page_number: 8,
+        layout: {
+          "width" => 100.0,
+          "height" => 200.0,
+          "items" => [
+            { "type" => "text", "text" => "Hello", "bbox" => [10, 20, 50, 35], "font_size" => 12 }
+          ]
+        }
+      )
+      card = FlashCard.create!(
+        book:,
+        book_html:,
+        areas_to_show: {},
+        items_to_remember: [],
+        text_adjustments: [{ "element_id" => "el-1", "dx" => 2, "dy" => -3 }]
+      )
+
+      get "/books/books/#{book.id}/flash_cards/#{card.id}/edit"
+
+      assert_response :success
+      assert_includes @response.body, "flash_card_text_adjustments"
+      assert_includes @response.body, "el-1"
+      assert_includes @response.body, "INITIAL_TEXT_ADJUSTMENTS"
+    end
+
     test "edit renders reused form and preview" do
       book = Book.new(title: "Book")
       book.save!(validate: false)
@@ -272,6 +307,7 @@ module BookPlugin
       assert_select "iframe.book-html-preview-frame[srcdoc*='Edit page']"
       assert_select "textarea#flash_card_areas_to_show", text: /\"a\"/
       assert_select "input[type=submit][value='Update flash card']"
+      assert_select "p", text: "Page 3"
     end
 
     test "update changes flash card and redirects to index" do
@@ -285,7 +321,8 @@ module BookPlugin
           book_html_id: book_html.id,
           areas_to_show: "{\"k\":2}",
           items_to_remember_text: "x\ny",
-          vector_adjustments: '[{"path_id":"vector-path-2","dx":3,"dy":4}]'
+          vector_adjustments: '[{"path_id":"vector-path-2","dx":3,"dy":4}]',
+          text_adjustments: '[{"element_id":"el-1","dx":2.5,"dy":-1}]'
         }
       }
 
@@ -297,6 +334,49 @@ module BookPlugin
         [{ "path_id" => "vector-path-2", "dx" => 3.0, "dy" => 4.0 }],
         card.vector_adjustments
       )
+      assert_equal(
+        [{ "element_id" => "el-1", "dx" => 2.5, "dy" => -1.0 }],
+        card.text_adjustments
+      )
+    end
+
+    test "update redirects to remember when return_to is the remember path" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+      book_html = BookHtml.create!(book:, page_number: 4, layout: sample_layout("P4"))
+      card = FlashCard.create!(book:, book_html:, areas_to_show: {}, items_to_remember: [])
+      remember_url = "/books/flash_cards/remember?reviewed_flash_card_ids=#{card.id}"
+
+      patch "/books/books/#{book.id}/flash_cards/#{card.id}", params: {
+        return_to: remember_url,
+        flash_card: {
+          book_html_id: book_html.id,
+          areas_to_show: "{}",
+          items_to_remember_text: "",
+          vector_adjustments: "[]"
+        }
+      }
+
+      assert_redirected_to remember_url
+    end
+
+    test "update ignores unsafe return_to" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+      book_html = BookHtml.create!(book:, page_number: 4, layout: sample_layout("P4"))
+      card = FlashCard.create!(book:, book_html:, areas_to_show: {}, items_to_remember: [])
+
+      patch "/books/books/#{book.id}/flash_cards/#{card.id}", params: {
+        return_to: "https://evil.example/phish",
+        flash_card: {
+          book_html_id: book_html.id,
+          areas_to_show: "{}",
+          items_to_remember_text: "",
+          vector_adjustments: "[]"
+        }
+      }
+
+      assert_redirected_to "/books/books/#{book.id}/flash_cards"
     end
 
     test "destroy removes flash card and redirects to index" do
