@@ -1,4 +1,4 @@
-<% content_for :title, "Edit Flash Card" %>
+<% content_for :title, @book_html.present? ? "Edit Flash Card · Page #{@book_html.page_number}" : "Edit Flash Card" %>
 <% content_for :head do %>
   <%= stylesheet_link_tag "book_plugin/books", "data-turbo-track": "reload" %>
   <%= javascript_include_tag "book_plugin/flash_card_preview_parent", defer: true %>
@@ -9,6 +9,9 @@
     <div>
       <p class="eyebrow">Flash Card</p>
       <h1>Edit · <%= @book.title %></h1>
+      <% if @book_html.present? %>
+        <p>Page <%= @book_html.page_number %></p>
+      <% end %>
     </div>
     <div class="remember-header-actions">
       <% if @return_to.present? %>

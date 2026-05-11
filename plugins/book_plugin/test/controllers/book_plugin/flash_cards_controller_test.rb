@@ -272,6 +272,7 @@ module BookPlugin
       assert_select "iframe.book-html-preview-frame[srcdoc*='Edit page']"
       assert_select "textarea#flash_card_areas_to_show", text: /\"a\"/
       assert_select "input[type=submit][value='Update flash card']"
+      assert_select "p", text: "Page 3"
     end
 
     test "update changes flash card and redirects to index" do
