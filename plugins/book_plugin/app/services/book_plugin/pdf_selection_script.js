@@ -2,13 +2,14 @@
 (function () {
     const btnPickArea = document.getElementById("btn-pick-area");
     const btnPickText = document.getElementById("btn-pick-text");
-    const btnDragVectors = document.getElementById("btn-drag-vectors");
+    const btnDragItems = document.getElementById("btn-drag-items");
     const page = document.querySelector(".page");
     const selectionBox = document.getElementById("selection-box");
     const SCALE = 1.0;
     const INITIAL_AREA_PDF = null;
     const INITIAL_PICKED_TEXT_GROUPS = null;
     const INITIAL_VECTOR_ADJUSTMENTS = [];
+    const INITIAL_TEXT_ADJUSTMENTS = [];
 
     let mode = null;
     let startX = 0;
@@ -21,6 +22,7 @@
     const currentPickedTextByElementId = new Map();
 
     let draggingPath = null;
+    let draggingTextEl = null;
     let dragStart = null;
 
     function applyPathTransform(path, dx, dy) {
@@ -40,6 +42,48 @@
     }
 
     window.getVectorAdjustments = getVectorAdjustments;
+
+    function applyTextTransform(el, dx, dy) {
+        el.dataset.dx = String(dx);
+        el.dataset.dy = String(dy);
+        el.style.transform = "translate(" + dx * SCALE + "px, " + dy * SCALE + "px)";
+    }
+
+    function getTextAdjustments() {
+        return Array.from(document.querySelectorAll(".text"))
+            .map((el) => ({
+                element_id: el.id,
+                dx: parseFloat(el.dataset.dx || "0"),
+                dy: parseFloat(el.dataset.dy || "0")
+            }))
+            .filter((v) => v.element_id && (v.dx !== 0 || v.dy !== 0));
+    }
+
+    window.getTextAdjustments = getTextAdjustments;
+
+    function emitTextAdjustments() {
+        const adjustments = getTextAdjustments();
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage(
+                {
+                    type: "text-adjustments-updated",
+                    adjustments: adjustments
+                },
+                "*"
+            );
+        }
+    }
+
+    function hydrateTextAdjustments() {
+        if (!Array.isArray(INITIAL_TEXT_ADJUSTMENTS)) return;
+
+        INITIAL_TEXT_ADJUSTMENTS.forEach((entry) => {
+            if (!entry || !entry.element_id) return;
+            const el = document.getElementById(entry.element_id);
+            if (!el || !el.classList.contains("text")) return;
+            applyTextTransform(el, Number(entry.dx) || 0, Number(entry.dy) || 0);
+        });
+    }
 
     function emitVectorAdjustments() {
         const adjustments = getVectorAdjustments();
@@ -69,12 +113,13 @@
         document.querySelectorAll("svg.vector-layer path").forEach((path) => {
             path.addEventListener("mousedown", (e) => {
                 e.stopPropagation();
-                if (mode !== "vector") return;
+                if (mode !== "drag-items") return;
 
                 // Prevent text selection / image dragging while moving a path.
                 if (typeof e.preventDefault === "function") e.preventDefault();
 
                 draggingPath = path;
+                draggingTextEl = null;
                 dragStart = {
                     x: e.clientX,
                     y: e.clientY,
@@ -83,19 +128,51 @@
                 };
             });
         });
+    }
 
+    function wireTextDragging() {
+        document.querySelectorAll(".text").forEach((textEl) => {
+            textEl.addEventListener("mousedown", (e) => {
+                e.stopPropagation();
+                if (mode !== "drag-items") return;
+                if (typeof e.preventDefault === "function") e.preventDefault();
+
+                draggingTextEl = textEl;
+                draggingPath = null;
+                dragStart = {
+                    x: e.clientX,
+                    y: e.clientY,
+                    dx: parseFloat(textEl.dataset.dx || "0"),
+                    dy: parseFloat(textEl.dataset.dy || "0")
+                };
+            });
+        });
+    }
+
+    function attachDocumentDragListeners() {
         document.addEventListener("mousemove", (e) => {
-            if (!draggingPath || !dragStart) return;
-            const nextDx = dragStart.dx + (e.clientX - dragStart.x) / SCALE;
-            const nextDy = dragStart.dy + (e.clientY - dragStart.y) / SCALE;
-            applyPathTransform(draggingPath, nextDx, nextDy);
+            if (!dragStart) return;
+            if (draggingPath) {
+                const nextDx = dragStart.dx + (e.clientX - dragStart.x) / SCALE;
+                const nextDy = dragStart.dy + (e.clientY - dragStart.y) / SCALE;
+                applyPathTransform(draggingPath, nextDx, nextDy);
+            } else if (draggingTextEl) {
+                const nextDx = dragStart.dx + (e.clientX - dragStart.x) / SCALE;
+                const nextDy = dragStart.dy + (e.clientY - dragStart.y) / SCALE;
+                applyTextTransform(draggingTextEl, nextDx, nextDy);
+            }
         });
 
         document.addEventListener("mouseup", () => {
-            if (!draggingPath) return;
+            if (draggingPath) {
+                emitVectorAdjustments();
+            }
+            if (draggingTextEl) {
+                emitTextAdjustments();
+            }
             draggingPath = null;
+            draggingTextEl = null;
             dragStart = null;
-            emitVectorAdjustments();
         });
     }
 
@@ -105,27 +182,38 @@
         selectionBox.style.display = "none";
         btnPickArea.classList.toggle("is-active", mode === "area");
         btnPickText.classList.toggle("is-active", mode === "text");
-        if (btnDragVectors) {
-            btnDragVectors.classList.toggle("is-active", mode === "vector");
+        if (btnDragItems) {
+            btnDragItems.classList.toggle("is-active", mode === "drag-items");
         }
 
-        // In "vector" mode only: bring SVG above text so paths receive pointer events.
+        page.classList.toggle("mode-drag-items", mode === "drag-items");
+
         const vectorLayer = document.querySelector("svg.vector-layer");
         if (vectorLayer) {
-            vectorLayer.style.zIndex = mode === "vector" ? "6" : "";
+            vectorLayer.style.zIndex = "";
         }
-        document.querySelectorAll(".text, .image").forEach((el) => {
-            el.style.pointerEvents = mode === "vector" ? "none" : "";
-        });
+
+        if (mode === "drag-items") {
+            document.querySelectorAll(".image").forEach((el) => {
+                el.style.pointerEvents = "none";
+            });
+            document.querySelectorAll(".text").forEach((el) => {
+                el.style.pointerEvents = "";
+            });
+        } else {
+            document.querySelectorAll(".text, .image").forEach((el) => {
+                el.style.pointerEvents = "";
+            });
+        }
     }
 
     btnPickArea.addEventListener("click", () => {
         setMode("area");
     });
 
-    if (btnDragVectors) {
-        btnDragVectors.addEventListener("click", () => {
-            setMode("vector");
+    if (btnDragItems) {
+        btnDragItems.addEventListener("click", () => {
+            setMode("drag-items");
         });
     }
 
@@ -486,5 +574,8 @@
     }
 
     hydrateVectorAdjustments();
+    hydrateTextAdjustments();
     wirePathDragging();
+    wireTextDragging();
+    attachDocumentDragListeners();
 })();

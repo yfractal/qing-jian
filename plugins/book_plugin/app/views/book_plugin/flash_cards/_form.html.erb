@@ -25,6 +25,10 @@
                          flash_card.vector_adjustments.to_json,
                          id: "flash_card_vector_adjustments" %>
 
+    <%= hidden_field_tag "flash_card[text_adjustments]",
+                         flash_card.text_adjustments.to_json,
+                         id: "flash_card_text_adjustments" %>
+
     <%= f.submit(flash_card.persisted? ? "Update flash card" : "Create flash card", class: "button button-primary") %>
   <% end %>
 </section>

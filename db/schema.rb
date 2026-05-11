@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_07_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_11_153000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -83,6 +83,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_07_120000) do
     t.bigint "book_id", null: false
     t.datetime "created_at", null: false
     t.jsonb "items_to_remember", default: [], null: false
+    t.jsonb "text_adjustments", default: [], null: false
     t.datetime "updated_at", null: false
     t.jsonb "vector_adjustments", default: [], null: false
     t.index ["book_html_id"], name: "index_book_plugin_flash_cards_on_book_html_id"

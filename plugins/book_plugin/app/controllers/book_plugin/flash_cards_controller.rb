@@ -35,6 +35,7 @@ module BookPlugin
       @flash_card.areas_to_show = parse_areas_to_show(params.dig(:flash_card, :areas_to_show))
       @flash_card.items_to_remember = parse_items_to_remember(params.dig(:flash_card, :items_to_remember_text))
       @flash_card.vector_adjustments = parse_vector_adjustments(params.dig(:flash_card, :vector_adjustments))
+      @flash_card.text_adjustments = parse_text_adjustments(params.dig(:flash_card, :text_adjustments))
 
       if @flash_card.save
         redirect_to book_path(@book), notice: "Flash card created."
@@ -57,6 +58,7 @@ module BookPlugin
       @flash_card.areas_to_show = parse_areas_to_show(params.dig(:flash_card, :areas_to_show))
       @flash_card.items_to_remember = parse_items_to_remember(params.dig(:flash_card, :items_to_remember_text))
       @flash_card.vector_adjustments = parse_vector_adjustments(params.dig(:flash_card, :vector_adjustments))
+      @flash_card.text_adjustments = parse_text_adjustments(params.dig(:flash_card, :text_adjustments))
 
       if @flash_card.save
         redirect_to @return_to || book_flash_cards_path(@book), notice: "Flash card updated."
@@ -140,6 +142,28 @@ module BookPlugin
 
         {
           "path_id" => path_id,
+          "dx" => entry["dx"].to_f,
+          "dy" => entry["dy"].to_f
+        }
+      end
+    rescue JSON::ParserError
+      []
+    end
+
+    def parse_text_adjustments(raw_value)
+      return [] if raw_value.blank?
+
+      parsed = JSON.parse(raw_value)
+      return [] unless parsed.is_a?(Array)
+
+      parsed.filter_map do |entry|
+        next unless entry.is_a?(Hash)
+
+        element_id = entry["element_id"].to_s
+        next if element_id.blank?
+
+        {
+          "element_id" => element_id,
           "dx" => entry["dx"].to_f,
           "dy" => entry["dy"].to_f
         }

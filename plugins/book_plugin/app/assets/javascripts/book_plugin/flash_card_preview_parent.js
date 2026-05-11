@@ -28,6 +28,12 @@
     el.value = JSON.stringify(adjustments);
   }
 
+  function setTextAdjustmentsJson(adjustments) {
+    const el = document.getElementById("flash_card_text_adjustments");
+    if (!el || !Array.isArray(adjustments)) return;
+    el.value = JSON.stringify(adjustments);
+  }
+
   window.addEventListener("message", function (ev) {
     if (!isFromPreviewIframe(ev)) return;
     const data = ev.data;
@@ -43,6 +49,10 @@
     }
     if (data.type === "vector-adjustments-updated") {
       setVectorAdjustmentsJson(data.adjustments);
+      return;
+    }
+    if (data.type === "text-adjustments-updated") {
+      setTextAdjustmentsJson(data.adjustments);
     }
   });
 })();
