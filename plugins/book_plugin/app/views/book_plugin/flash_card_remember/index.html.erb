@@ -15,6 +15,9 @@
     </div>
     <div class="remember-header-actions">
       <% if @flash_card.present? %>
+        <%= link_to "Edit flash card",
+            edit_book_flash_card_path(@flash_card.book, @flash_card, return_to: request.fullpath),
+            class: "button button-secondary" %>
         <%= link_to "Flash cards for this book", book_flash_cards_path(@flash_card.book), class: "button button-secondary" %>
         <%= link_to "Back to book", book_path(@flash_card.book), class: "button button-secondary" %>
       <% else %>

@@ -48,16 +48,18 @@ module BookPlugin
 
     def edit
       @book_html = @flash_card.book_html
+      @return_to = safe_flash_card_remember_return_path(params[:return_to])
     end
 
     def update
+      @return_to = safe_flash_card_remember_return_path(params[:return_to])
       @flash_card.assign_attributes(flash_card_params)
       @flash_card.areas_to_show = parse_areas_to_show(params.dig(:flash_card, :areas_to_show))
       @flash_card.items_to_remember = parse_items_to_remember(params.dig(:flash_card, :items_to_remember_text))
       @flash_card.vector_adjustments = parse_vector_adjustments(params.dig(:flash_card, :vector_adjustments))
 
       if @flash_card.save
-        redirect_to book_flash_cards_path(@book), notice: "Flash card updated."
+        redirect_to @return_to || book_flash_cards_path(@book), notice: "Flash card updated."
       else
         @book_html = @flash_card.book_html
         flash.now[:alert] = "Could not update flash card."
@@ -71,6 +73,15 @@ module BookPlugin
     end
 
     private
+
+    def safe_flash_card_remember_return_path(raw)
+      full = CGI.unescape(raw.to_s.strip)
+      path_part, query = full.split("?", 2)
+      return nil unless path_part == "/books/flash_cards/remember"
+      return nil if full.include?("\n") || full.include?("\r")
+
+      query.present? ? "#{path_part}?#{query}" : path_part
+    end
 
     def set_flash_card
       @flash_card = @book.flash_cards.find(params[:id])

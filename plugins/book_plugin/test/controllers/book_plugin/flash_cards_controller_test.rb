@@ -299,6 +299,45 @@ module BookPlugin
       )
     end
 
+    test "update redirects to remember when return_to is the remember path" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+      book_html = BookHtml.create!(book:, page_number: 4, layout: sample_layout("P4"))
+      card = FlashCard.create!(book:, book_html:, areas_to_show: {}, items_to_remember: [])
+      remember_url = "/books/flash_cards/remember?reviewed_flash_card_ids=#{card.id}"
+
+      patch "/books/books/#{book.id}/flash_cards/#{card.id}", params: {
+        return_to: remember_url,
+        flash_card: {
+          book_html_id: book_html.id,
+          areas_to_show: "{}",
+          items_to_remember_text: "",
+          vector_adjustments: "[]"
+        }
+      }
+
+      assert_redirected_to remember_url
+    end
+
+    test "update ignores unsafe return_to" do
+      book = Book.new(title: "Book")
+      book.save!(validate: false)
+      book_html = BookHtml.create!(book:, page_number: 4, layout: sample_layout("P4"))
+      card = FlashCard.create!(book:, book_html:, areas_to_show: {}, items_to_remember: [])
+
+      patch "/books/books/#{book.id}/flash_cards/#{card.id}", params: {
+        return_to: "https://evil.example/phish",
+        flash_card: {
+          book_html_id: book_html.id,
+          areas_to_show: "{}",
+          items_to_remember_text: "",
+          vector_adjustments: "[]"
+        }
+      }
+
+      assert_redirected_to "/books/books/#{book.id}/flash_cards"
+    end
+
     test "destroy removes flash card and redirects to index" do
       book = Book.new(title: "Book")
       book.save!(validate: false)
